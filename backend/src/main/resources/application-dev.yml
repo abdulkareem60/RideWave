@@ -1,0 +1,56 @@
+# ============================================================
+#  RideWave – Development Profile Overrides
+# ============================================================
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ridewave_dev
+    username: ridewave_user
+    password: ridewave_pass
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # ── Mail (Gmail SMTP) ─────────────────────────────────────
+  # Generate an App Password at https://myaccount.google.com/apppasswords
+  # (requires 2-Step Verification enabled on the Gmail account).
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME:your-gmail@gmail.com}
+    password: ${GMAIL_APP_PASSWORD:your-16-char-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+app:
+  mail:
+    from-address: ${GMAIL_USERNAME:your-gmail@gmail.com}
+    from-name: RideWave
+
+twilio:
+  enabled: false    # Never send real SMS in dev
+
+payment:
+  provider: null    # Simulated payments only
+
+# ── Gemini AI document verification ──────────────────────────────────────
+# Get a free key at https://aistudio.google.com/app/apikey
+# If unset, document AI analysis is skipped (admin reviews manually).
+gemini:
+  enabled: ${GEMINI_ENABLED:true}
+  api-key: AIzaSyxxxxxxxxxxxxxxxx
+  model: gemini-2.0-flash
+
+logging:
+  level:
+    com.ridewave: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.mail: DEBUG

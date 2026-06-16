@@ -1,0 +1,21 @@
+# ============================================================
+# RideWave – Production Profile Overrides
+# ============================================================
+
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+twilio:
+  enabled: true
+
+payment:
+  provider: stripe
+
+logging:
+  level:
+    com.ridewave: INFO
+    org.springframework.security: WARN
+    root: WARN

@@ -1,0 +1,157 @@
+# ============================================================
+#  RideWave – Main Application Configuration
+# ============================================================
+
+spring:
+  application:
+    name: ridewave-backend
+
+  # ── Active profile (override in prod with env var) ────────
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # ── DataSource ────────────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ridewave}
+    username: ${DB_USER:ridewave_user}
+    password: ${DB_PASS:ridewave_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      pool-name: RideWaveHikariPool
+
+  # ── JPA / Hibernate ───────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate          # Flyway owns schema — never let Hibernate alter it
+    show-sql: false
+    open-in-view: false           # Prevents lazy-loading leaks in controllers
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  # ── Flyway (DB Migrations) ────────────────────────────────
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: public
+
+  # ── Mail (Gmail SMTP) ─────────────────────────────────────
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${GMAIL_USERNAME:}
+    password: ${GMAIL_APP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  # ── Serialization ─────────────────────────────────────────
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+# ── Server ──────────────────────────────────────────────────
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# ── JWT ─────────────────────────────────────────────────────
+jwt:
+  secret: ${JWT_SECRET:ThisIsAVeryLongSecretKeyForRideWaveJWTTokens2024MustBeAtLeast256Bits}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}         # 24 hours
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 days
+
+# ── Twilio (SMS) ────────────────────────────────────────────
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
+  auth-token:  ${TWILIO_AUTH_TOKEN:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
+  from-number: ${TWILIO_FROM_NUMBER:+15005550006}
+  enabled: ${TWILIO_ENABLED:false}    # false = mock SMS in dev
+
+# ── Payment ─────────────────────────────────────────────────
+payment:
+  provider: ${PAYMENT_PROVIDER:null}   # 'null' = NullPaymentProcessor (simulation)
+  currency: PKR
+
+# ── App Config ──────────────────────────────────────────────
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+  admin:
+    email: ${ADMIN_EMAIL:admin@ridewave.com}
+    password: ${ADMIN_PASSWORD:Admin@RideWave123}
+    full-name: ${ADMIN_FULL_NAME:RideWave Admin}
+    phone: ${ADMIN_PHONE:+920000000000}
+  otp:
+    expiry-minutes: 10
+    ride-otp-expiry-minutes: 30
+  trust-score:
+    default: 3.00
+    min-to-book: 1.50
+    min-to-drive: 2.00
+    auto-suspend-below: 1.00
+  verification:
+    # Tesseract tessdata directory. Leave blank to auto-detect.
+    # Override with TESSDATA_PREFIX env var or this property.
+    # Ubuntu/Debian: /usr/share/tesseract-ocr/5/tessdata
+    # Windows:       C:/Program Files/Tesseract-OCR/tessdata
+    tessdata-path: ${TESSDATA_PREFIX:}
+    # Laplacian variance below this value = blurry image (default 100.0)
+    blur-threshold: ${BLUR_THRESHOLD:100.0}
+    # Minimum score (0.00-1.00) for admin auto-eligibility gate
+    ai-score-threshold: ${AI_SCORE_THRESHOLD:0.60}
+
+# ── Gemini (disabled — replaced by local Tesseract OCR pipeline) ──────────
+gemini:
+  enabled: false
+  mail:
+    from-address: ${GMAIL_USERNAME:noreply@ridewave.com}
+    from-name: RideWave
+
+# ── Actuator ────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ── SpringDoc / Swagger ──────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  info:
+    title: RideWave API
+    version: 1.0.0
+    description: Ride-sharing platform REST API
