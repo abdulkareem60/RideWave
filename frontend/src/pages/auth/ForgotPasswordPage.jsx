@@ -24,16 +24,16 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-blue-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-blue-50 dark:from-surface-dark dark:to-surface-dark px-4">
       <div className="w-full max-w-md">
         <div className="card p-8 shadow-md">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-blue-100 rounded-full">
+            <div className="p-3 bg-blue-100 dark:bg-blue-500/15 rounded-full">
               <KeyRound className="h-7 w-7 text-brand-600" />
             </div>
           </div>
-          <h1 className="text-xl font-bold text-center text-gray-900 mb-1">Forgot password?</h1>
-          <p className="text-sm text-gray-500 text-center mb-6">
+          <h1 className="text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-1">Forgot password?</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
             Enter your email and we'll send a reset OTP.
           </p>
 
@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-5">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
             <Link to="/login" className="text-brand-600 hover:underline">Back to login</Link>
           </p>
         </div>

@@ -25,7 +25,7 @@ export default function Avatar({ src, alt, name, size = 'md' }) {
         src={src}
         alt={label || 'Avatar'}
         onError={() => setBroken(true)}
-        className="rounded-full object-cover border border-gray-200 flex-shrink-0"
+        className="rounded-full object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0"
         style={{ width: px, height: px }}
       />
     );
@@ -33,11 +33,11 @@ export default function Avatar({ src, alt, name, size = 'md' }) {
 
   return (
     <div
-      className="rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0"
+      className="rounded-full bg-indigo-100 dark:bg-indigo-500/15 flex items-center justify-center flex-shrink-0"
       style={{ width: px, height: px }}
       aria-label={label || 'Avatar'}
     >
-      <span className="font-bold text-indigo-700" style={{ fontSize: Math.round(px * 0.35) }}>
+      <span className="font-bold text-indigo-700 dark:text-indigo-300" style={{ fontSize: Math.round(px * 0.35) }}>
         {initials}
       </span>
     </div>

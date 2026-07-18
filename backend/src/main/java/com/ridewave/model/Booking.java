@@ -55,6 +55,52 @@ public class Booking {
 
     private LocalDateTime cancelledAt;
 
+    // ── Passenger's actual journey segment ───────────────────────────────
+    //
+    // The passenger does not necessarily travel the driver's full route.
+    // These fields store where the passenger wants to be picked up and
+    // dropped off — validated by RouteValidationService to ensure both
+    // points lie on (or near) the driver's stored route polyline, and
+    // that the pickup appears before the drop in the direction of travel.
+    //
+    // All nullable: old bookings (created before this feature) will show
+    // the driver's full origin → destination in the UI instead.
+
+    @Column(name = "pickup_name", length = 300)
+    private String pickupName;
+
+    @Column(name = "pickup_lat", precision = 9, scale = 6)
+    private BigDecimal pickupLat;
+
+    @Column(name = "pickup_lng", precision = 9, scale = 6)
+    private BigDecimal pickupLng;
+
+    @Column(name = "drop_name", length = 300)
+    private String dropName;
+
+    @Column(name = "drop_lat", precision = 9, scale = 6)
+    private BigDecimal dropLat;
+
+    @Column(name = "drop_lng", precision = 9, scale = 6)
+    private BigDecimal dropLng;
+
+    // ── Partial-route fare breakdown ─────────────────────────────────────
+    // These fields are set by BookingService after the mediator runs and
+    // override the mediator's flat-fare calculation for segment bookings.
+    // Null for full-route bookings and legacy bookings.
+
+    /** Passenger's pickup→drop segment distance in metres (Directions API). */
+    @Column(name = "passenger_distance_m")
+    private Integer passengerDistanceM;
+
+    /** Driver's total fare ÷ seats offered. */
+    @Column(name = "per_seat_trip_fare", precision = 10, scale = 2)
+    private BigDecimal perSeatTripFare;
+
+    /** Pro-rated per-seat fare for the passenger's segment. */
+    @Column(name = "passenger_fare_per_seat", precision = 10, scale = 2)
+    private BigDecimal passengerFarePerSeat;
+
     @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Payment payment;
 }

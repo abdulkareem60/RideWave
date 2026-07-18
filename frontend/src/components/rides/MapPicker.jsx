@@ -1,483 +1,248 @@
+/**
+ * MapPicker — Google Maps Places Autocomplete + interactive pin picker.
+ *
+ * Props:
+ *   label        {string}    Field label shown above input
+ *   placeholder  {string}    Input placeholder
+ *   value        {object}    { name, lat, lng } — controlled
+ *   onChange     {function}  Called with { name, lat, lng } on selection
+ *   icon         {ReactNode} Optional Lucide icon
+ *   id           {string}    HTML id for accessibility
+ *   error        {string}    Validation error message
+ *
+ * Behaviour:
+ *   1. Loads Google Maps JS API (from window — loader injected by useGoogleMaps hook)
+ *   2. Attaches Places Autocomplete to the text input (country: pk)
+ *   3. On place_changed: resolves lat/lng from geometry and calls onChange
+ *   4. Shows a small inline map with a draggable pin below the input
+ *      (only when a location is selected — zero height otherwise)
+ *   5. Pin drag updates lat/lng via Geocoder reverse geocode
+ *   6. Handles null geometry gracefully (manual typing → Geocode on blur)
+ *
+ * Required env: VITE_GOOGLE_MAPS_API_KEY
+ */
+
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { MapPin, Loader2, Navigation, Search, X, AlertCircle, Check, Info } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext.jsx';
+import { getMapStyles } from '../../utils/mapStyles.js';
 
-const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+import { loadGoogleMaps } from '../../utils/googleMapsLoader.js';
 
-let loaderPromise = null;
-
-function loadGoogleMaps() {
-  if (window.google?.maps?.places) return Promise.resolve();
-  if (loaderPromise) return loaderPromise;
-
-  loaderPromise = new Promise((resolve, reject) => {
-    if (!API_KEY) {
-      reject(new Error('Google Maps API key missing'));
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('Failed to load Google Maps'));
-    document.head.appendChild(script);
-  });
-
-  return loaderPromise;
-}
-
-// PKR Formatter
-const formatPKR = (amount) => {
-  return new Intl.NumberFormat('en-PK', {
-    style: 'currency',
-    currency: 'PKR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-// Format PKR with symbol
-const formatPKRCompact = (amount) => {
-  if (amount >= 1000) {
-    return `Rs ${(amount / 1000).toFixed(1)}k`;
-  }
-  return `Rs ${amount}`;
-};
-
-// Custom PKR Icon component
-const PKRIcon = ({ className = "h-5 w-5" }) => (
-  <span className={`inline-flex items-center justify-center font-bold ${className}`}>
-    Rs
-  </span>
-);
-
-// Estimate fare based on distance
-const estimateFare = (distanceKm) => {
-  // Average PKR per km for ride-sharing in Pakistan
-  const baseRate = 25; // PKR per km
-  const minimumFare = 100; // Minimum PKR
-  const estimatedFare = Math.max(minimumFare, Math.round(distanceKm * baseRate));
-  return {
-    min: Math.round(estimatedFare * 0.8),
-    max: Math.round(estimatedFare * 1.2),
-    suggested: estimatedFare,
-  };
-};
-
-export default function MapPicker({
-  label,
-  placeholder,
-  value,
-  onChange,
-  icon: Icon,
-  id,
-  error,
-  companionValue,
-  showFareEstimate = false,
-}) {
-  const inputRef = useRef(null);
-  const mapRef = useRef(null);
+// ── Main component ────────────────────────────────────────────────────────
+export default function MapPicker({ label, placeholder, value, onChange, icon: Icon, id, error }) {
+  const { isDark } = useTheme();
+  const inputRef  = useRef(null);
   const mapDivRef = useRef(null);
+  const mapRef    = useRef(null);
   const markerRef = useRef(null);
-  const acRef = useRef(null);
+  const acRef     = useRef(null);
 
-  const [apiReady, setApiReady] = useState(!!window.google?.maps);
-  const [apiError, setApiError] = useState(null);
-  const [isFocused, setIsFocused] = useState(false);
-  const [inputValue, setInputValue] = useState(value?.name || '');
-  const [isSelected, setIsSelected] = useState(!!value?.name);
+  const [apiReady, setApiReady]   = useState(!!window.google?.maps?.places);
+  const [apiError, setApiError]   = useState(null);
+  const [mapReady, setMapReady]   = useState(false);
 
-  // Calculate distance between two points
-  const calculateDistance = useCallback(() => {
-    if (!value?.lat || !value?.lng || !companionValue?.lat || !companionValue?.lng) return null;
-
-    const R = 6371;
-    const dLat = (companionValue.lat - value.lat) * Math.PI / 180;
-    const dLng = (companionValue.lng - value.lng) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(value.lat * Math.PI / 180) * Math.cos(companionValue.lat * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distanceKm = R * c;
-
-    return {
-      km: distanceKm.toFixed(1),
-      miles: (distanceKm * 0.621371).toFixed(1),
-    };
-  }, [value, companionValue]);
-
-  // Load Google Maps API
+  // ── Load Google Maps ────────────────────────────────────────────────────
   useEffect(() => {
     if (apiReady) return;
-
     loadGoogleMaps()
       .then(() => setApiReady(true))
       .catch(e => setApiError(e.message));
   }, []);
 
-  // Initialize Autocomplete
+  // ── Attach Places Autocomplete once API is ready ──────────────────────
   useEffect(() => {
     if (!apiReady || !inputRef.current || acRef.current) return;
 
+    if (!window.google?.maps?.places?.Autocomplete) return;
     const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: 'pk' },
-      fields: ['formatted_address', 'geometry'],
+      fields: ['name', 'formatted_address', 'geometry'],
     });
 
     ac.addListener('place_changed', () => {
       const place = ac.getPlace();
-
-      if (!place.geometry?.location) return;
-
+      if (!place.geometry?.location) {
+        // If no geometry, geocode the typed value
+        geocodeAddress(inputRef.current.value);
+        return;
+      }
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
-
-      setInputValue(place.formatted_address);
-      setIsSelected(true);
-
-      onChange({
-        name: place.formatted_address,
-        lat,
-        lng,
-      });
+      const name = place.formatted_address || place.name || inputRef.current.value;
+      onChange({ name, lat, lng });
     });
 
     acRef.current = ac;
   }, [apiReady, onChange]);
 
-  // Initialize/Update Map
+  // ── Geocode fallback (manual text entry) ─────────────────────────────
+  const geocodeAddress = useCallback((address) => {
+    if (!address || !window.google?.maps) return;
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ address, region: 'PK' }, (results, status) => {
+      if (status === 'OK' && results[0]) {
+        const lat = results[0].geometry.location.lat();
+        const lng = results[0].geometry.location.lng();
+        onChange({ name: address, lat, lng });
+      }
+    });
+  }, [onChange]);
+
+  // ── Init mini map when a location is selected ─────────────────────────
   useEffect(() => {
-    if (!apiReady || !value?.lat || !value?.lng || !mapDivRef.current) return;
+    if (!apiReady || !mapDivRef.current || !value?.lat || !value?.lng) return;
 
     const latLng = new window.google.maps.LatLng(value.lat, value.lng);
 
     if (!mapRef.current) {
       const map = new window.google.maps.Map(mapDivRef.current, {
-        center: latLng,
-        zoom: 15,
-        disableDefaultUI: true,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'off' }],
-          },
-        ],
-        mapTypeControl: false,
+        center:            latLng,
+        zoom:              14,
+        disableDefaultUI:  true,
+        zoomControl:       true,
+        gestureHandling:   'cooperative',
+        mapTypeControl:    false,
         streetViewControl: false,
-        fullscreenControl: false,
+        styles:            getMapStyles(isDark),
       });
 
       const marker = new window.google.maps.Marker({
-        position: latLng,
+        position:  latLng,
         map,
         draggable: true,
+        title:     'Drag to adjust location',
         animation: window.google.maps.Animation.DROP,
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 10,
-          fillColor: '#4F46E5',
-          fillOpacity: 1,
-          strokeColor: '#FFFFFF',
-          strokeWeight: 2,
-        },
       });
 
-      // Drag end handler
+      // Reverse geocode on drag end
       marker.addListener('dragend', () => {
         const pos = marker.getPosition();
         const geocoder = new window.google.maps.Geocoder();
-
         geocoder.geocode({ location: pos }, (results, status) => {
           if (status === 'OK' && results[0]) {
-            setInputValue(results[0].formatted_address);
             onChange({
               name: results[0].formatted_address,
-              lat: pos.lat(),
-              lng: pos.lng(),
+              lat:  pos.lat(),
+              lng:  pos.lng(),
             });
+            if (inputRef.current) inputRef.current.value = results[0].formatted_address;
           }
         });
       });
 
-      // Map click handler
-      map.addListener('click', (e) => {
-        marker.setPosition(e.latLng);
-        const geocoder = new window.google.maps.Geocoder();
-
-        geocoder.geocode({ location: e.latLng }, (results, status) => {
-          if (status === 'OK' && results[0]) {
-            setInputValue(results[0].formatted_address);
-            onChange({
-              name: results[0].formatted_address,
-              lat: e.latLng.lat(),
-              lng: e.latLng.lng(),
-            });
-          }
-        });
-      });
-
-      mapRef.current = map;
+      mapRef.current    = map;
       markerRef.current = marker;
+      setMapReady(true);
     } else {
+      // Update existing map
       mapRef.current.setCenter(latLng);
-      mapRef.current.setZoom(15);
       markerRef.current.setPosition(latLng);
     }
-  }, [apiReady, value, onChange]);
+  }, [apiReady, value?.lat, value?.lng, onChange]);
 
-  const handleClear = () => {
-    setInputValue('');
-    setIsSelected(false);
-    onChange(null);
+  // Live theme switching — the map is created once above and never
+  // recreated; google.maps.Map doesn't pick up a new `styles` array on
+  // its own, so when the user toggles dark mode while this map is
+  // already mounted, push the new style set onto the existing instance.
+  useEffect(() => {
     if (mapRef.current) {
-      mapRef.current = null;
-      markerRef.current = null;
+      mapRef.current.setOptions({ styles: getMapStyles(isDark) });
     }
-  };
+  }, [isDark]);
 
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-    if (isSelected) {
-      setIsSelected(false);
+  // Update input display when value changes externally
+  useEffect(() => {
+    if (inputRef.current && value?.name && document.activeElement !== inputRef.current) {
+      inputRef.current.value = value.name;
     }
-  };
+  }, [value?.name]);
 
   const hasLocation = !!(value?.lat && value?.lng);
-  const distance = calculateDistance();
-  const fareEstimate = distance ? estimateFare(parseFloat(distance.km)) : null;
 
   return (
-    <div className="space-y-2">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Label */}
-      {label && (
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label}
-        </label>
-      )}
+      <label htmlFor={id} style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+        {label}
+      </label>
 
-      {/* Search Input */}
-      <div className="relative">
-        <div className={`
-          relative flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200
-          ${isFocused
-            ? 'ring-2 ring-indigo-500/20 border-indigo-500 bg-white shadow-sm'
-            : error
-              ? 'border-red-300 bg-red-50'
-              : 'border-gray-200 bg-white hover:border-gray-300'
-          }
-          ${hasLocation ? 'border-indigo-200 bg-indigo-50/50' : ''}
-        `}>
-          {/* Icon */}
-          <div className={`
-            flex-shrink-0 transition-colors duration-200
-            ${isFocused ? 'text-indigo-600' : error ? 'text-red-400' : 'text-gray-400'}
-            ${hasLocation ? 'text-indigo-600' : ''}
-          `}>
-            {Icon ? (
-              <Icon className="h-5 w-5" />
-            ) : (
-              <MapPin className="h-5 w-5" />
-            )}
-          </div>
-
-          {/* Input */}
-          <input
-            ref={inputRef}
-            id={id}
-            type="text"
-            placeholder={placeholder || 'Search for a location...'}
-            value={inputValue}
-            onChange={handleInputChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            className={`
-              flex-1 bg-transparent border-none outline-none text-sm placeholder:text-gray-400
-              ${error ? 'text-red-700' : 'text-gray-900'}
-            `}
-            autoComplete="off"
-          />
-
-          {/* Status Indicators */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {!apiReady && !apiError && (
-              <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
-            )}
-
-            {apiError && (
-              <AlertCircle className="h-4 w-4 text-red-400" />
-            )}
-
-            {hasLocation && !error && (
-              <div className="p-0.5 bg-emerald-100 rounded-full">
-                <Check className="h-3.5 w-3.5 text-emerald-600" />
-              </div>
-            )}
-
-            {inputValue && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-                aria-label="Clear location"
-              >
-                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Powered by Google */}
-        {apiReady && isFocused && (
-          <div className="absolute right-0 -bottom-5">
-            <span className="text-[10px] text-gray-400 flex items-center gap-1">
-              <MapPin className="h-2.5 w-2.5" />
-              Powered by Google
-            </span>
-          </div>
+      {/* Input row */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'var(--color-background-secondary)',
+        border: `0.5px solid ${error ? 'var(--color-border-danger)' : 'var(--color-border-tertiary)'}`,
+        borderRadius: 'var(--border-radius-md)', padding: '8px 12px',
+        transition: 'border-color 0.15s',
+      }}>
+        {Icon
+          ? <Icon size={15} aria-hidden="true" style={{ color: 'var(--color-text-tertiary)', flexShrink: 0 }} />
+          : <MapPin size={15} aria-hidden="true" style={{ color: 'var(--color-text-tertiary)', flexShrink: 0 }} />
+        }
+        <input
+          ref={inputRef}
+          id={id}
+          type="text"
+          placeholder={placeholder}
+          autoComplete="off"
+          defaultValue={value?.name ?? ''}
+          onBlur={e => { if (!hasLocation && e.target.value) geocodeAddress(e.target.value); }}
+          aria-label={label}
+          aria-invalid={!!error}
+          style={{
+            border: 'none', outline: 'none', background: 'transparent',
+            fontSize: 14, color: 'var(--color-text-primary)', width: '100%',
+          }}
+        />
+        {!apiReady && !apiError && (
+          <Loader2 size={14} style={{ color: 'var(--color-text-tertiary)', animation: 'spin 1s linear infinite', flexShrink: 0 }} aria-label="Loading Places API" />
+        )}
+        {hasLocation && apiReady && (
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-text-success)', flexShrink: 0 }} aria-label="Location confirmed" title="Location confirmed" />
         )}
       </div>
 
-      {/* Error Message */}
+      {/* Error */}
       {error && (
-        <div className="flex items-center gap-1.5 mt-1">
-          <AlertCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-          <p className="text-xs text-red-500 font-medium">{error}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--color-text-danger)' }}>
+          <AlertCircle size={12} /> {error}
         </div>
       )}
 
-      {/* API Error */}
+      {/* API load error */}
       {apiError && (
-        <div className="flex items-center gap-1.5 p-3 bg-red-50 rounded-xl border border-red-200">
-          <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-red-700">Maps failed to load</p>
-            <p className="text-xs text-red-600 mt-0.5">{apiError}</p>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--color-text-danger)' }}>
+          <AlertCircle size={12} /> {apiError}
         </div>
       )}
 
-      {/* Distance & Fare Estimate */}
-      {distance && showFareEstimate && fareEstimate && (
-        <div className="bg-gradient-to-r from-indigo-50 to-emerald-50 rounded-2xl p-4 border border-indigo-100">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-xl shadow-sm">
-                <Navigation className="h-4 w-4 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium">Distance</p>
-                <p className="text-sm font-bold text-gray-900">
-                  {distance.km} km
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-xl shadow-sm">
-                <PKRIcon className="h-4 w-4 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium">Suggested Fare</p>
-                <p className="text-sm font-bold text-gray-900">
-                  {formatPKR(fareEstimate.suggested)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-indigo-200/50">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-500">Estimated range:</span>
-              <span className="font-semibold text-gray-700">
-                {formatPKRCompact(fareEstimate.min)} - {formatPKRCompact(fareEstimate.max)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 mt-1">
-              <Info className="h-3 w-3 text-gray-400 flex-shrink-0" />
-              <p className="text-[10px] text-gray-400">
-                Based on average PKR 25/km. Actual fare may vary.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PKR Fare Reference Card */}
-      {hasLocation && !showFareEstimate && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-          <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-            <span className="text-xs font-bold text-emerald-700">Rs</span>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-emerald-700">
-              Typical fares: {formatPKRCompact(200)} - {formatPKRCompact(2000)}
-            </p>
-            <p className="text-[10px] text-emerald-600 mt-0.5">
-              Set competitive pricing to attract more passengers
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Map Container */}
+      {/* Mini map — appears after location is confirmed */}
       <div
         ref={mapDivRef}
-        className={`
-          relative overflow-hidden rounded-2xl border border-gray-200 transition-all duration-300
-          ${hasLocation ? 'opacity-100' : 'opacity-0'}
-        `}
+        aria-label={`Map for ${label}`}
         style={{
-          height: hasLocation ? 200 : 0,
-          marginTop: hasLocation ? 8 : 0,
+          height:       hasLocation && apiReady ? 160 : 0,
+          marginTop:    hasLocation && apiReady ? 6   : 0,
+          borderRadius: 'var(--border-radius-md)',
+          overflow:     'hidden',
+          border:       hasLocation && apiReady ? '0.5px solid var(--color-border-tertiary)' : 'none',
+          transition:   'height 0.25s ease',
         }}
-      >
-        {/* Map Instructions */}
-        {hasLocation && (
-          <div className="absolute top-3 left-3 z-10">
-            <div className="px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center gap-1.5">
-                <Navigation className="h-3.5 w-3.5 text-indigo-600" />
-                <p className="text-[11px] font-semibold text-gray-700">
-                  Drag marker or click map to adjust
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+      />
 
-        {/* Coordinates & PKR Indicator */}
-        {hasLocation && (
-          <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-2">
-            <div className="px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200">
-              <p className="text-[11px] font-mono text-gray-500">
-                {value.lat.toFixed(4)}, {value.lng.toFixed(4)}
-              </p>
-            </div>
-            <div className="px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200">
-              <p className="text-[11px] font-semibold text-emerald-600">PKR</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Location Confirmation */}
-      {hasLocation && value?.name && !error && (
-        <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-          <MapPin className="h-4 w-4 text-indigo-600 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-indigo-700">Selected Location</p>
-            <p className="text-sm font-semibold text-indigo-900 mt-0.5 truncate">
-              {value.name}
-            </p>
-          </div>
-          <div className="flex-shrink-0 px-2 py-1 bg-white rounded-lg border border-indigo-200">
-            <p className="text-[10px] font-semibold text-gray-600">
-              {value.lat.toFixed(4)}, {value.lng.toFixed(4)}
-            </p>
-          </div>
+      {hasLocation && (
+        <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>
+          {value.lat.toFixed(6)}, {value.lng.toFixed(6)} — drag pin to fine-tune
         </div>
       )}
     </div>
   );
+}
+
+// ── Spin keyframe (self-contained, injected once) ─────────────────────────
+if (typeof document !== 'undefined' && !document.getElementById('mp-spin')) {
+  const s = document.createElement('style');
+  s.id = 'mp-spin';
+  s.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+  document.head.appendChild(s);
 }

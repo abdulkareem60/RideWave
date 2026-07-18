@@ -195,13 +195,10 @@ export default function DriverOnboardingPage() {
         toast.success('Profile photo saved!');
         await refreshUser?.();
       } else {
-        toast.success(`${step.title} uploaded — OCR running...`);
+        // Only show "uploaded" toast — never show "verified!" here.
+        // The OCR result drives the next-step message (see OcrStatusBlock).
+        toast.success(`${step.title} uploaded — OCR running…`);
         setUploadedAt(p => ({ ...p, [step.key]: Date.now() }));
-
-        // Prompt for next step
-        if (step.next) {
-          setTimeout(() => toast(step.next, { icon: '→', duration: 4000 }), 2000);
-        }
       }
       queryClient.invalidateQueries({ queryKey: ['my-documents'] });
     } catch (err) {
@@ -242,7 +239,7 @@ export default function DriverOnboardingPage() {
 
         <ProgressBar steps={STEPS} currentStep={overallStep} isStepPassed={isStepPassed} />
 
-        <StatusBanner status={user?.status} />
+        <StatusBanner status={user?.status} allPassed={allPassed} />
 
         {STEPS.map(step => {
           const locked = !isStepUnlocked(step.index);
@@ -417,26 +414,70 @@ function VehicleStepCard({ step, vehicles, locked, queryClient }) {
 }
 
 
-// ── Awaiting Review Card ──────────────────────────────────────────────────
-// Shown when all docs have passed automated OCR checks. Activation is no
-// longer automatic — an admin must manually review and approve the account.
-// There is nothing to poll for completion here; the driver is redirected
-// once an admin actually makes a decision (handled by the polling effect
-// elsewhere in this component, and finalised on /driver/pending-approval).
+// ── Activation Status Card ────────────────────────────────────────────────
+// Shown when all docs have passed OCR but backend hasn't confirmed ACTIVE yet.
 
 function ActivationStatusCard({ status }) {
-  if (status !== 'PENDING_VERIFICATION') return null;
+  const [timedOut, setTimedOut] = useState(false);
 
+  useEffect(() => {
+    if (status !== 'PENDING_VERIFICATION') return;
+    // If activation hasn't happened within 15s of all docs passing,
+    // stop the spinner and show a clear non-infinite message.
+    const t = setTimeout(() => setTimedOut(true), 15_000);
+    return () => clearTimeout(t);
+  }, [status]);
+
+  if (status === 'PENDING_VERIFICATION' && !timedOut) {
+    return (
+      <div className="card p-5 border border-blue-200 bg-blue-50">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+          </div>
+          <div>
+            <p className="font-semibold text-blue-900">All checks passed — activating your account</p>
+            <p className="text-sm text-blue-700 mt-0.5">
+              This takes just a moment. You will be redirected automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'PENDING_VERIFICATION' && timedOut) {
+    return (
+      <div className="card p-5 border border-amber-200 bg-amber-50">
+        <div className="flex items-start gap-3">
+          <Clock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-900">Activation taking longer than expected</p>
+            <p className="text-sm text-amber-700 mt-1">
+              Your documents have passed verification. If you are not redirected within a minute,
+              please refresh the page. If the problem persists, an admin will review your application.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-800 underline"
+            >
+              Refresh page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin review required
   return (
     <div className="card p-5 border border-amber-200 bg-amber-50">
       <div className="flex items-center gap-3">
         <Send className="h-6 w-6 text-amber-600 flex-shrink-0" />
         <div>
-          <p className="font-semibold text-amber-900">Documents submitted — awaiting admin review</p>
+          <p className="font-semibold text-amber-900">Sent to admin review</p>
           <p className="text-sm text-amber-700 mt-0.5">
-            Your documents have been submitted. An admin will manually review
-            them and approve or reject your application. You'll receive a
-            notification once a decision is made.
+            One or more documents require manual verification. You will be notified by email once approved.
           </p>
         </div>
       </div>
@@ -484,13 +525,19 @@ function ProgressBar({ steps, currentStep, isStepPassed }) {
 
 // ── Status Banner ─────────────────────────────────────────────────────────
 
-function StatusBanner({ status }) {
+function StatusBanner({ status, allPassed }) {
+  // If all docs passed but status is still PENDING_VERIFICATION,
+  // backend auto-activation is running — show "Activating..." not "Under Review"
+  const activating = allPassed && status === 'PENDING_VERIFICATION';
+
   const map = {
     PENDING:              { icon: Circle,     bg: 'bg-gray-50 border-gray-200 text-gray-700',
                             title: 'Not started', msg: 'Upload each document below.' },
-    PENDING_VERIFICATION: { icon: Clock,      bg: 'bg-amber-50 border-amber-200 text-amber-800',
-                            title: 'Manual Review Required',
-                            msg: 'One or more documents need a closer look. An admin will review and respond shortly.' },
+    PENDING_VERIFICATION: activating
+      ? { icon: Loader2,    bg: 'bg-blue-50 border-blue-200 text-blue-800',
+          title: 'Activating account...', msg: 'All checks passed. Your account is being activated automatically.' }
+      : { icon: Clock,      bg: 'bg-amber-50 border-amber-200 text-amber-800',
+          title: 'Under Review', msg: 'Admin is reviewing your application.' },
     ACTIVE:               { icon: ShieldCheck, bg: 'bg-green-50 border-green-200 text-green-800',
                             title: 'Verified Driver', msg: 'Account active. Redirecting to dashboard...' },
     REJECTED:             { icon: ShieldX,    bg: 'bg-red-50 border-red-200 text-red-800',
@@ -500,7 +547,7 @@ function StatusBanner({ status }) {
   const Icon = cfg.icon;
   return (
     <div className={`flex items-start gap-3 p-4 rounded-xl border ${cfg.bg}`}>
-      <Icon className={`h-5 w-5 flex-shrink-0 mt-0.5 ${status === 'PENDING_VERIFICATION' ? 'animate-pulse' : ''}`} />
+      <Icon className={`h-5 w-5 flex-shrink-0 mt-0.5 ${activating ? 'animate-spin' : ''}`} />
       <div>
         <p className="font-semibold text-sm">{cfg.title}</p>
         <p className="text-xs mt-0.5">{cfg.msg}</p>
@@ -594,6 +641,7 @@ function StepCard({ step, doc, locked, uploading, uploadedAt, onSelect, onRetry,
               <OcrStatusBlock
                 state={state} score={score} flags={flags}
                 attemptsLeft={attemptsLeft} onRetry={onRetry}
+                nextMessage={step.next}
               />
             )}
           </div>
@@ -605,7 +653,7 @@ function StepCard({ step, doc, locked, uploading, uploadedAt, onSelect, onRetry,
 
 // ── OCR Status Block ──────────────────────────────────────────────────────
 
-function OcrStatusBlock({ state, score, flags, attemptsLeft, onRetry }) {
+function OcrStatusBlock({ state, score, flags, attemptsLeft, onRetry, nextMessage }) {
   if (state === 'empty') return (
     <p className="text-xs text-gray-400">Upload an image to begin OCR analysis.</p>
   );
@@ -613,7 +661,7 @@ function OcrStatusBlock({ state, score, flags, attemptsLeft, onRetry }) {
   if (state === 'processing') return (
     <div className="flex items-center gap-2 text-xs text-blue-600">
       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      Processing... (OCR running in background)
+      OCR running… verifying document
     </div>
   );
 
@@ -632,6 +680,13 @@ function OcrStatusBlock({ state, score, flags, attemptsLeft, onRetry }) {
         </span>
         {score != null && <ScoreBar score={score} />}
       </div>
+      {/* Show "→ Now upload your X" only AFTER backend confirms PASS */}
+      {nextMessage && (
+        <p className="text-xs text-green-700 font-medium flex items-center gap-1 mt-1">
+          <ChevronRight className="h-3.5 w-3.5" />
+          {nextMessage}
+        </p>
+      )}
     </div>
   );
 

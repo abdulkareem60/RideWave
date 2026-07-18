@@ -47,7 +47,7 @@ export default function ProfilePage() {
   return (
     <PageLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">My Profile</h1>
 
         {/* Profile card */}
         <div className="card p-6">
@@ -56,17 +56,17 @@ export default function ProfilePage() {
               {user?.fullName?.charAt(0)}
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900">{user?.fullName}</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
-              <p className="text-sm text-gray-500">{user?.phone}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{user?.fullName}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user?.phone}</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-            <div><p className="text-xs text-gray-400">Role</p><p className="text-sm font-medium">{user?.role}</p></div>
-            <div><p className="text-xs text-gray-400">Status</p><StatusBadge status={user?.status} /></div>
-            <div><p className="text-xs text-gray-400">Trust Score</p><TrustScoreBadge score={user?.trustScore} showLabel /></div>
-            <div><p className="text-xs text-gray-400">Email</p><p className="text-sm">{user?.emailVerified ? '✅ Verified' : '⚠️ Unverified'}</p></div>
-            <div><p className="text-xs text-gray-400">Phone</p><p className="text-sm">{user?.phoneVerified ? '✅ Verified' : '⚠️ Unverified'}</p></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <div><p className="text-xs text-gray-400 dark:text-gray-500">Role</p><p className="text-sm font-medium">{user?.role}</p></div>
+            <div><p className="text-xs text-gray-400 dark:text-gray-500">Status</p><StatusBadge status={user?.status} /></div>
+            <div><p className="text-xs text-gray-400 dark:text-gray-500">Trust Score</p><TrustScoreBadge score={user?.trustScore} showLabel /></div>
+            <div><p className="text-xs text-gray-400 dark:text-gray-500">Email</p><p className="text-sm">{user?.emailVerified ? '✅ Verified' : '⚠️ Unverified'}</p></div>
+            <div><p className="text-xs text-gray-400 dark:text-gray-500">Phone</p><p className="text-sm">{user?.phoneVerified ? '✅ Verified' : '⚠️ Unverified'}</p></div>
           </div>
         </div>
 
@@ -74,7 +74,7 @@ export default function ProfilePage() {
         {isDriver && (
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Car className="h-4 w-4 text-brand-500" /> My Vehicles
               </h2>
               <button onClick={() => setShowAddVehicle(!showAddVehicle)}
@@ -85,7 +85,7 @@ export default function ProfilePage() {
 
             {showAddVehicle && (
               <form onSubmit={handleSubmit(d => addVehicle.mutate(d))}
-                    className="mb-5 p-4 bg-gray-50 rounded-lg space-y-3">
+                    className="mb-5 p-4 bg-gray-50 dark:bg-surface-dark rounded-lg space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <FormInput label="Make" id="make" placeholder="Toyota" register={register} error={errors.make}
                              rules={{ required: 'Required' }} />
@@ -114,17 +114,17 @@ export default function ProfilePage() {
             {loadingVehicles ? (
               <Spinner />
             ) : vehicles?.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No vehicles registered.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">No vehicles registered.</p>
             ) : (
               <div className="space-y-2">
                 {vehicles.map(v => (
-                  <div key={v.vehicleId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={v.vehicleId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-dark rounded-lg">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{v.make} {v.model} ({v.year})</p>
-                      <p className="text-xs text-gray-500">{v.plateNumber} · {v.color} · {v.totalSeats} seats</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{v.make} {v.model} ({v.year})</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{v.plateNumber} · {v.color} · {v.totalSeats} seats</p>
                     </div>
                     <button onClick={() => removeVehicle.mutate(v.vehicleId)}
-                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

@@ -1,5 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import Navbar from './components/common/Navbar.jsx';
+import HomePage from './pages/HomePage.jsx';
 
 // ── Auth pages ────────────────────────────────────────────────────────────
 import LoginPage           from './pages/auth/LoginPage.jsx';
@@ -38,6 +41,36 @@ import ReportsPage         from './pages/admin/ReportsPage.jsx';
 import ProtectedRoute      from './components/common/ProtectedRoute.jsx';
 import DashboardRedirect   from './components/common/DashboardRedirect.jsx';
 
+
+/**
+ * RootRoute — "/" handler.
+ *
+ * Guests            → landing page (with Navbar)
+ * PASSENGER (auth)  → /rides/search
+ * DRIVER    (auth)  → /driver/dashboard
+ * ADMIN     (auth)  → /admin/dashboard
+ *
+ * We wait until the auth session is restored (loading=false) before
+ * deciding, so a page refresh doesn't flash-redirect before localStorage
+ * is read.
+ */
+function RootRoute() {
+  const { user, loading, isDriver, isAdmin } = useAuth();
+
+  // Still restoring session from localStorage — render nothing to avoid flash
+  if (loading) return null;
+
+  if (user) {
+    // Authenticated → redirect to role-appropriate dashboard
+    if (isAdmin)  return <Navigate to="/admin/dashboard"    replace />;
+    if (isDriver) return <Navigate to="/driver/dashboard"   replace />;
+    return               <Navigate to="/rides/search"       replace />;
+  }
+
+  // Guest → show public landing page
+  return <><Navbar /><HomePage /></>;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -50,11 +83,8 @@ export default function App() {
         <Route path="/verify-email"     element={<VerifyEmailPage />} />
         <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
         <Route path="/reset-password"   element={<ResetPasswordPage />} />
-        <Route path="/rides/search" element={
-          <ProtectedRoute allowedRoles={['PASSENGER']}>
-            <SearchRidesPage />
-          </ProtectedRoute>
-        } />
+        {/* Public — guests can browse; booking itself requires login (enforced at click-time) */}
+        <Route path="/rides/search" element={<SearchRidesPage />} />
         <Route path="/rides/:rideId"    element={<RideDetailPage />} />
 
         {/* ── Smart redirect based on role ─────────────────────── */}
@@ -132,9 +162,11 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        {/* ── Fallback ─────────────────────────────────────────── */}
-        <Route path="/"   element={<Navigate to="/rides/search" replace />} />
-        <Route path="*"   element={<Navigate to="/rides/search" replace />} />
+        {/* ── Root "/" — guests see landing page, auth users get redirected ── */}
+        <Route path="/" element={<RootRoute />} />
+
+        {/* ── Catch-all ─────────────────────────────────────────── */}
+        <Route path="*"   element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
   );

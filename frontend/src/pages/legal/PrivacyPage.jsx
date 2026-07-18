@@ -5,12 +5,12 @@ const LAST_UPDATED = 'June 16, 2026';
 export default function PrivacyPage() {
   return (
     <LegalPageLayout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Privacy Policy</h1>
-      <p className="text-sm text-gray-400 mb-8">Last updated: {LAST_UPDATED}</p>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Privacy Policy</h1>
+      <p className="text-sm text-gray-400 dark:text-gray-500 mb-8">Last updated: {LAST_UPDATED}</p>
 
-      <div className="prose prose-sm max-w-none space-y-6 text-gray-700">
+      <div className="prose prose-sm max-w-none space-y-6 text-gray-700 dark:text-gray-300">
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">1. Information We Collect</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">1. Information We Collect</h2>
           <p>
             When you register, we collect your full name, email address, phone number, and a
             hashed password. Drivers additionally submit a profile photo, driving license,
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">2. How We Use Your Information</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">2. How We Use Your Information</h2>
           <p>
             We use your information to operate the platform: matching drivers with passengers,
             processing bookings and payments, verifying driver documents, sending notifications
@@ -28,7 +28,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">3. Document Verification Data</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">3. Document Verification Data</h2>
           <p>
             Driving license and vehicle registration images are processed using optical
             character recognition to extract identifying information and verify authenticity.
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">4. Location Data</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">4. Location Data</h2>
           <p>
             With your permission, we collect GPS coordinates to support pickup verification and
             to display ride routes on the map. Location data is only collected while actively
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">5. Information Sharing</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">5. Information Sharing</h2>
           <p>
             Your name, profile photo, and trust score are visible to other users when relevant
             to a ride (e.g. a passenger can see their driver's name and rating). We do not sell
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">6. Data Retention</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">6. Data Retention</h2>
           <p>
             We retain your account information for as long as your account is active. If you
             delete your account, we retain transaction records as required for legal and
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">7. Your Rights</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">7. Your Rights</h2>
           <p>
             You may request a copy of the personal data we hold about you, request corrections,
             or request deletion of your account, subject to legal and operational requirements.
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">8. Security</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">8. Security</h2>
           <p>
             Passwords are stored using industry-standard hashing. Document images and
             verification data are stored securely and access is restricted to administrators
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">9. Changes to This Policy</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">9. Changes to This Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. Material changes may require
             existing users to re-acknowledge the updated policy.

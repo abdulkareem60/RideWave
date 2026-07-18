@@ -16,8 +16,8 @@ function StatCard({ icon: Icon, label, value, color }) {
         <Icon className="h-5 w-5 text-white" />
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
       </div>
     </div>
   );
@@ -40,10 +40,10 @@ export default function PassengerDashboard() {
     <PageLayout>
       {/* Welcome */}
       <div className="mb-7">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           Welcome back, {user?.fullName?.split(' ')[0]}! 👋
         </h1>
-        <p className="text-sm text-gray-500 mt-1">Here's an overview of your rides.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Here's an overview of your rides.</p>
       </div>
 
       {/* Stats */}
@@ -58,8 +58,8 @@ export default function PassengerDashboard() {
       {/* Trust score */}
       <div className="card p-5 mb-8 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-700">Your Trust Score</p>
-          <p className="text-xs text-gray-400 mt-0.5">Based on ratings from drivers</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Your Trust Score</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Based on ratings from drivers</p>
         </div>
         <TrustScoreBadge score={user?.trustScore} showLabel />
       </div>
@@ -67,21 +67,21 @@ export default function PassengerDashboard() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
         <Link to="/rides/search" className="card p-5 hover:shadow-md transition-shadow flex items-center gap-4 group">
-          <div className="p-3 bg-brand-50 rounded-xl group-hover:bg-brand-100 transition-colors">
-            <Search className="h-5 w-5 text-brand-600" />
+          <div className="p-3 bg-brand-50 dark:bg-brand-500/15 rounded-xl group-hover:bg-brand-100 dark:group-hover:bg-brand-500/25 transition-colors">
+            <Search className="h-5 w-5 text-brand-600 dark:text-brand-400" />
           </div>
           <div>
-            <p className="font-semibold text-gray-800">Search Rides</p>
-            <p className="text-xs text-gray-500">Find and book your next ride</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">Search Rides</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Find and book your next ride</p>
           </div>
         </Link>
         <Link to="/bookings" className="card p-5 hover:shadow-md transition-shadow flex items-center gap-4 group">
-          <div className="p-3 bg-green-50 rounded-xl group-hover:bg-green-100 transition-colors">
-            <Calendar className="h-5 w-5 text-green-600" />
+          <div className="p-3 bg-green-50 dark:bg-green-500/15 rounded-xl group-hover:bg-green-100 dark:group-hover:bg-green-500/25 transition-colors">
+            <Calendar className="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p className="font-semibold text-gray-800">My Bookings</p>
-            <p className="text-xs text-gray-500">View and manage your bookings</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">My Bookings</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">View and manage your bookings</p>
           </div>
         </Link>
       </div>
@@ -89,14 +89,14 @@ export default function PassengerDashboard() {
       {/* Recent Bookings */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Recent Bookings</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Bookings</h2>
           <Link to="/bookings" className="text-xs text-brand-600 hover:underline">View all</Link>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-8"><Spinner /></div>
         ) : bookings.length === 0 ? (
-          <div className="card p-8 text-center text-sm text-gray-400">
+          <div className="card p-8 text-center text-sm text-gray-400 dark:text-gray-500">
             No bookings yet.{' '}
             <Link to="/rides/search" className="text-brand-600 hover:underline">Search for a ride!</Link>
           </div>
@@ -105,10 +105,10 @@ export default function PassengerDashboard() {
             {bookings.map((b) => (
               <div key={b.bookingId} className="card p-4 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                     {b.originName} → {b.destName}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                     {formatDate(b.departureTime)} · {formatCurrency(b.totalFare)}
                   </p>
                 </div>

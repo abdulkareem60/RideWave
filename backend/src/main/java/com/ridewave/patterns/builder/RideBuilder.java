@@ -8,120 +8,124 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
- * Builder Pattern — RideBuilder
+ * Builder pattern: constructs a validated {@link Ride} entity step-by-step,
+ * avoiding the telescoping-constructor anti-pattern.
  *
- * Problem this solves:
- *   A Ride entity has 15+ fields. A constructor with 15 parameters is unreadable,
- *   fragile (easy to swap arguments of the same type), and can't validate field
- *   interdependencies (e.g. availableSeats must not exceed vehicle.totalSeats).
- *
- * How it works:
- *   - Each setter returns 'this' for fluent chaining.
- *   - Each setter performs immediate, atomic field-level validation.
- *   - build() performs cross-field validation before constructing the entity.
- *   - reset() allows the same Spring singleton bean to be reused across requests
- *     without creating a new instance each time.
- *
- * Usage in RideService:
- *   Ride ride = rideBuilder
- *       .driver(driverUser)
- *       .vehicle(vehicle)
- *       .origin("Karachi", 24.8607, 67.0011)
- *       .destination("Lahore", 31.5204, 74.3587)
- *       .departureAt(LocalDateTime.now().plusHours(2))
- *       .farePerSeat(new BigDecimal("500.00"))
- *       .seats(3)
- *       .requiresApproval(false)
- *       .build();
- *
- * Note on thread safety:
- *   RideBuilder is @Component (Spring singleton) but each service call begins with
- *   reset(), making the state per-call. For true thread safety in high-concurrency
- *   environments, use a prototype-scoped bean or a static factory that creates a
- *   new builder instance per call.
+ * Spring manages this as a prototype-scoped or reset()-able singleton.
+ * Call reset() at the start of each ride-creation request to clear state
+ * from any previous build.
  */
 @Component
 public class RideBuilder {
 
-    // ── State ─────────────────────────────────────────────────────────────
-
-    private User          driver;
-    private Vehicle       vehicle;
-    private String        originName;
-    private BigDecimal    originLat;
-    private BigDecimal    originLng;
-    private String        destName;
-    private BigDecimal    destLat;
-    private BigDecimal    destLng;
+    private UUID       driverId;
+    private User       driver;
+    private Vehicle    vehicle;
+    private String     originName;
+    private BigDecimal originLat;
+    private BigDecimal originLng;
+    private String     destName;
+    private BigDecimal destLat;
+    private BigDecimal destLng;
+    private String     routePolyline;   // ← NEW: Google encoded polyline
+    private Integer    routeDistanceM;  // total route distance in metres
     private LocalDateTime departureTime;
-    private BigDecimal    farePerSeat;
-    private Integer       availableSeats;
-    private boolean       requiresApproval = false;
+    private LocalDateTime estimatedArrivalTime;
+    private BigDecimal farePerSeat;
+    private Integer    availableSeats;
+    private Boolean    requiresApproval = false;
 
-    // ── Fluent setters (each validates its own input) ─────────────────────
-
-    public RideBuilder driver(User driver) {
-        Objects.requireNonNull(driver, "Driver must not be null");
-        this.driver = driver;
+    public RideBuilder reset() {
+        driverId = null; driver = null; vehicle = null;
+        originName = null; originLat = null; originLng = null;
+        destName   = null; destLat   = null; destLng   = null;
+        routePolyline  = null;
+        routeDistanceM = null;
+        departureTime        = null;
+        estimatedArrivalTime = null;
+        farePerSeat    = null;
+        availableSeats = null;
+        requiresApproval = false;
         return this;
     }
 
-    public RideBuilder vehicle(Vehicle vehicle) {
-        Objects.requireNonNull(vehicle, "Vehicle must not be null");
-        this.vehicle = vehicle;
+    public RideBuilder driver(User driver) {
+        this.driver   = Objects.requireNonNull(driver, "Driver is required");
+        this.driverId = driver.getUserId();
         return this;
     }
 
     public RideBuilder origin(String name, BigDecimal lat, BigDecimal lng) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Origin name must not be blank");
-        }
-        this.originName = name.trim();
+        this.originName = name;
         this.originLat  = lat;
         this.originLng  = lng;
         return this;
     }
 
     public RideBuilder destination(String name, BigDecimal lat, BigDecimal lng) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Destination name must not be blank");
-        }
-        this.destName = name.trim();
+        this.destName = name;
         this.destLat  = lat;
         this.destLng  = lng;
         return this;
     }
 
+    /**
+     * Sets the Google Maps encoded polyline for the driver's full route.
+     * Stored on the Ride entity so RouteValidationService can decode and
+     * validate passenger pickup/drop points at booking time without
+     * making a live API call.
+     */
+    public RideBuilder routePolyline(String polyline) {
+        this.routePolyline = polyline;
+        return this;
+    }
+
+    public RideBuilder vehicle(Vehicle vehicle) {
+        this.vehicle = Objects.requireNonNull(vehicle, "Vehicle is required");
+        return this;
+    }
+
     public RideBuilder departureAt(LocalDateTime time) {
-        Objects.requireNonNull(time, "Departure time must not be null");
-        if (time.isBefore(LocalDateTime.now().plusMinutes(15))) {
+        Objects.requireNonNull(time, "Departure time is required");
+        if (time.isBefore(LocalDateTime.now().plusMinutes(14))) {
             throw new IllegalArgumentException(
-                    "Departure time must be at least 15 minutes in the future");
+                    "Departure must be at least 15 minutes in the future");
         }
         this.departureTime = time;
         return this;
     }
 
-    public RideBuilder farePerSeat(BigDecimal fare) {
-        Objects.requireNonNull(fare, "Fare per seat must not be null");
-        if (fare.compareTo(BigDecimal.ONE) < 0) {
-            throw new IllegalArgumentException("Fare per seat must be at least 1.00");
+    public RideBuilder fare(BigDecimal fare) {
+        Objects.requireNonNull(fare, "Fare is required");
+        if (fare.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Fare must be positive");
         }
         this.farePerSeat = fare;
         return this;
     }
 
+    /** Alias for {@link #fare(BigDecimal)} — matches the method name RideService calls. */
+    public RideBuilder farePerSeat(BigDecimal fare) {
+        return fare(fare);
+    }
+
+    public RideBuilder estimatedArrivalTime(LocalDateTime time) {
+        this.estimatedArrivalTime = time;
+        return this;
+    }
+
+    public RideBuilder routeDistanceM(Integer distanceM) {
+        this.routeDistanceM = distanceM;
+        return this;
+    }
+
     public RideBuilder seats(int seats) {
-        if (seats < 1) {
-            throw new IllegalArgumentException("At least 1 seat must be offered");
-        }
-        if (seats > 8) {
-            throw new IllegalArgumentException("Maximum 8 seats allowed per ride");
+        if (seats < 1 || seats > 8) {
+            throw new IllegalArgumentException("Seats must be between 1 and 8");
         }
         this.availableSeats = seats;
         return this;
@@ -132,48 +136,15 @@ public class RideBuilder {
         return this;
     }
 
-    // ── Build ─────────────────────────────────────────────────────────────
-
-    /**
-     * Performs cross-field validation then constructs the Ride entity.
-     *
-     * Cross-field rules:
-     *   1. Seats offered must not exceed the vehicle's total seat capacity.
-     *   2. Origin and destination names must differ (no zero-distance rides).
-     *   3. All mandatory fields must be non-null (defensive final check).
-     *
-     * @throws IllegalStateException if any mandatory field is missing.
-     * @throws IllegalArgumentException if cross-field rules are violated.
-     */
     public Ride build() {
-        // ── Mandatory field guard ────────────────────────────────────────
-        List<String> missing = new ArrayList<>();
-        if (driver        == null) missing.add("driver");
-        if (vehicle       == null) missing.add("vehicle");
-        if (originName    == null) missing.add("originName");
-        if (destName      == null) missing.add("destName");
-        if (departureTime == null) missing.add("departureTime");
-        if (farePerSeat   == null) missing.add("farePerSeat");
-        if (availableSeats == null) missing.add("seats");
+        Objects.requireNonNull(driver,          "Driver is required");
+        Objects.requireNonNull(vehicle,         "Vehicle is required");
+        Objects.requireNonNull(originName,      "Origin name is required");
+        Objects.requireNonNull(destName,        "Destination name is required");
+        Objects.requireNonNull(departureTime,   "Departure time is required");
+        Objects.requireNonNull(farePerSeat,     "Fare is required");
+        Objects.requireNonNull(availableSeats,  "Seats are required");
 
-        if (!missing.isEmpty()) {
-            throw new IllegalStateException(
-                    "Cannot build Ride — missing required fields: " + missing);
-        }
-
-        // ── Cross-field validation ────────────────────────────────────────
-        if (availableSeats > vehicle.getTotalSeats()) {
-            throw new IllegalArgumentException(
-                    String.format("Offered seats (%d) cannot exceed vehicle capacity (%d)",
-                            availableSeats, vehicle.getTotalSeats()));
-        }
-
-        if (originName.equalsIgnoreCase(destName)) {
-            throw new IllegalArgumentException(
-                    "Origin and destination must be different locations");
-        }
-
-        // ── Construct entity ─────────────────────────────────────────────
         Ride ride = new Ride();
         ride.setDriver(driver);
         ride.setVehicle(vehicle);
@@ -183,35 +154,15 @@ public class RideBuilder {
         ride.setDestName(destName);
         ride.setDestLat(destLat);
         ride.setDestLng(destLng);
+        ride.setRoutePolyline(routePolyline);   // ← NEW
+        ride.setRouteDistanceM(routeDistanceM);
         ride.setDepartureTime(departureTime);
+        ride.setEstimatedArrivalTime(estimatedArrivalTime);
         ride.setFarePerSeat(farePerSeat);
         ride.setAvailableSeats(availableSeats);
         ride.setTotalSeats(availableSeats);
         ride.setRequiresApproval(requiresApproval);
         ride.setStatus(RideStatus.SCHEDULED);
-
         return ride;
-    }
-
-    // ── Reset ─────────────────────────────────────────────────────────────
-
-    /**
-     * Clears all state so this singleton bean can be reused for the next request.
-     * Always call this before building a new ride.
-     */
-    public RideBuilder reset() {
-        driver         = null;
-        vehicle        = null;
-        originName     = null;
-        originLat      = null;
-        originLng      = null;
-        destName       = null;
-        destLat        = null;
-        destLng        = null;
-        departureTime  = null;
-        farePerSeat    = null;
-        availableSeats = null;
-        requiresApproval = false;
-        return this;
     }
 }

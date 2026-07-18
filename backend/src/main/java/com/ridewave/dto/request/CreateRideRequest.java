@@ -9,11 +9,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * DTO for POST /api/v1/rides — create a new ride.
+ * Request body for POST /api/v1/rides.
  *
- * Validation is intentionally strict here: a malformed ride creation
- * request should fail at the controller boundary, not leak into the
- * service or Builder layer.
+ * The client is responsible for resolving place names to coordinates and
+ * for fetching the Google Directions polyline before submitting. The
+ * backend does not call Google Maps — it uses the polyline that arrives
+ * here for all downstream route-segment validation at booking time.
  */
 @Getter
 @Setter
@@ -47,20 +48,48 @@ public class CreateRideRequest {
     @DecimalMax(value = "180.0",  message = "Destination longitude must be <= 180")
     private BigDecimal destLng;
 
-    // ── Timing ────────────────────────────────────────────────────────────
+    /**
+     * Google Maps encoded polyline for the full driver route.
+     * Fetched client-side via the Directions API and sent here at
+     * ride-creation time. Stored on the Ride entity and later decoded
+     * by RouteValidationService when passengers submit booking requests
+     * with pickup/drop coordinates.
+     *
+     * Optional: rides created without a polyline (e.g. from older clients)
+     * fall back to straight-line (Haversine) proximity checks.
+     */
+    private String routePolyline;
+
+    /**
+     * Total driving distance of the route in metres, from Google Directions API.
+     * Stored on the Ride entity so BookingService can calculate pro-rated fares
+     * without making a live API call at booking time.
+     */
+    private Integer routeDistanceM;
+
+    /**
+     * Estimated driving duration in seconds from Google Directions API.
+     * Sent alongside routeDistanceM. Used by RideService to compute
+     * estimatedArrivalTime = departureTime + routeDurationS seconds.
+     * When null, estimatedArrivalTime defaults to departureTime + 3 hours.
+     */
+    private Integer routeDurationS;
+
+    // ── Timing & Pricing ──────────────────────────────────────────────────
 
     @NotNull(message = "Departure time is required")
     @Future(message = "Departure time must be in the future")
     private LocalDateTime departureTime;
 
-    // ── Pricing ───────────────────────────────────────────────────────────
-
-    @NotNull(message = "Fare per seat is required")
-    @DecimalMin(value = "1.00", inclusive = true, message = "Fare per seat must be at least 1.00")
-    @Digits(integer = 8, fraction = 2, message = "Fare must have at most 8 integer and 2 decimal digits")
-    private BigDecimal farePerSeat;
-
-    // ── Seats ─────────────────────────────────────────────────────────────
+    /**
+     * Total fare for the complete journey across ALL seats.
+     * Per-seat fare is derived: totalTripFare ÷ seats.
+     * Passenger fare is then pro-rated: (segmentDistM ÷ routeDistanceM) × perSeatFare.
+     */
+    @NotNull(message = "Total trip fare is required")
+    @DecimalMin(value = "0.01", message = "Total fare must be greater than 0")
+    @DecimalMax(value = "999999.99", message = "Total fare cannot exceed 999,999")
+    private BigDecimal totalTripFare;
 
     @NotNull(message = "Number of seats is required")
     @Min(value = 1, message = "At least 1 seat must be offered")
@@ -74,9 +103,5 @@ public class CreateRideRequest {
 
     // ── Optional settings ─────────────────────────────────────────────────
 
-    /**
-     * When true, each booking request waits for driver approval before
-     * the seat is confirmed. Defaults to false (instant confirmation).
-     */
     private boolean requiresApproval = false;
 }

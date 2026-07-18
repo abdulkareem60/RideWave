@@ -12,9 +12,9 @@ function StatCard({ icon: Icon, label, value, color, unit }) {
         <div className={`p-2.5 rounded-xl ${color}`}>
           <Icon className="h-4 w-4 text-white" />
         </div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
       </div>
-      <p className="text-2xl font-bold text-gray-900">
+      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
         {unit === 'PKR' ? formatCurrency(value) : (value ?? 0).toLocaleString()}
       </p>
     </div>
@@ -24,7 +24,7 @@ function StatCard({ icon: Icon, label, value, color, unit }) {
 function Section({ title, children }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{title}</h2>
+      <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{title}</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">{children}</div>
     </div>
   );
@@ -48,8 +48,8 @@ export default function AdminDashboardPage() {
   return (
     <PageLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Platform overview · Auto-refreshes every 60s</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Platform overview · Auto-refreshes every 60s</p>
       </div>
 
       <div className="space-y-8">

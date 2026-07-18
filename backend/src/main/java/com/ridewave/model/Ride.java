@@ -13,11 +13,11 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "rides", indexes = {
-        @Index(name = "idx_ride_driver",     columnList = "driver_id"),
-        @Index(name = "idx_ride_status",     columnList = "status"),
-        @Index(name = "idx_ride_departure",  columnList = "departure_time"),
-        @Index(name = "idx_ride_origin",     columnList = "origin_name"),
-        @Index(name = "idx_ride_dest",       columnList = "dest_name")
+        @Index(name = "idx_ride_driver",    columnList = "driver_id"),
+        @Index(name = "idx_ride_status",    columnList = "status"),
+        @Index(name = "idx_ride_departure", columnList = "departure_time"),
+        @Index(name = "idx_ride_origin",    columnList = "origin_name"),
+        @Index(name = "idx_ride_dest",      columnList = "dest_name")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -60,10 +60,49 @@ public class Ride {
     @Column(precision = 9, scale = 6)
     private BigDecimal destLng;
 
+    /**
+     * Total driving distance of the route in metres, from Google Directions API.
+     * Stored at ride-creation time alongside the encoded polyline.
+     * Used by BookingService to calculate pro-rated fares for partial segments.
+     * Nullable: legacy rides without this value fall back to polyline-derived
+     * Haversine distance for fare calculation.
+     */
+    @Column(name = "route_distance_m")
+    private Integer routeDistanceM;
+
+    /**
+     * Google Maps encoded polyline representing the driver's full route
+     * from origin to destination, stored at ride-creation time via the
+     * Directions API (client-side fetch → sent in CreateRideRequest).
+     *
+     * Nullable for backward-compatibility with rides created before this
+     * feature was added. When null, route-segment validation falls back to
+     * a straight-line (Haversine) check instead of polyline projection.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String routePolyline;
+
     // ── Timing & Pricing ──────────────────────────────────────────────────
 
     @Column(nullable = false)
     private LocalDateTime departureTime;
+
+    /**
+     * Driver's expected arrival time at the destination.
+     * Derived at ride-creation time: departureTime + estimated driving duration
+     * (from Google Directions API routeDurationS, or a 3-hour fallback).
+     *
+     * Used for:
+     *   1. Overlap detection — a driver cannot have two rides whose
+     *      [departure, estimatedArrival] intervals intersect.
+     *   2. Expiry — RideExpiryScheduler marks this ride EXPIRED once
+     *      estimatedArrivalTime has passed and there are no active bookings.
+     *
+     * Nullable for backward-compat with rides created before this field existed;
+     * the scheduler falls back to departureTime + 3 hours when null.
+     */
+    @Column(name = "estimated_arrival_time")
+    private LocalDateTime estimatedArrivalTime;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal farePerSeat;
@@ -82,10 +121,11 @@ public class Ride {
     @Builder.Default
     private RideStatus status = RideStatus.SCHEDULED;
 
-    /**
-     * When true, driver must manually approve each booking request before
-     * a seat is confirmed.
-     */
+    @Column(length = 72)   // BCrypt hash length
+    private String rideOtpHash;
+
+    private LocalDateTime startedAt;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean requiresApproval = false;
@@ -93,9 +133,6 @@ public class Ride {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
-
-    /** Timestamp when the driver pressed Start — null until ride begins. */
-    private LocalDateTime startedAt;
 
     // ── Relationships ──────────────────────────────────────────────────────
 

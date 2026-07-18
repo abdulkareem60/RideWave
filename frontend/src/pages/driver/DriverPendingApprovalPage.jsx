@@ -31,11 +31,11 @@ const DOC_LABELS = {
 };
 
 const STATUS_COLOR = {
-  PASS:       { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle },
-  REVIEW:     { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   icon: Clock       },
-  FAIL:       { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     icon: AlertTriangle },
-  PROCESSING: { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    icon: RefreshCw   },
-  PENDING:    { bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-200',    icon: Clock       },
+  PASS:       { bg: 'bg-emerald-50 dark:bg-emerald-500/15', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-500/30', icon: CheckCircle },
+  REVIEW:     { bg: 'bg-amber-50 dark:bg-amber-500/15',   text: 'text-amber-700 dark:text-amber-300',   border: 'border-amber-200 dark:border-amber-500/30',   icon: Clock       },
+  FAIL:       { bg: 'bg-red-50 dark:bg-red-500/15',     text: 'text-red-700 dark:text-red-300',     border: 'border-red-200 dark:border-red-500/30',     icon: AlertTriangle },
+  PROCESSING: { bg: 'bg-blue-50 dark:bg-blue-500/15',    text: 'text-blue-700 dark:text-blue-300',    border: 'border-blue-200 dark:border-blue-500/30',    icon: RefreshCw   },
+  PENDING:    { bg: 'bg-gray-50 dark:bg-gray-800',    text: 'text-gray-600 dark:text-gray-400',    border: 'border-gray-200 dark:border-gray-700',    icon: Clock       },
 };
 
 function DocStatusCard({ doc }) {
@@ -48,7 +48,7 @@ function DocStatusCard({ doc }) {
   return (
     <div className={`rounded-2xl border p-4 ${cfg.bg} ${cfg.border}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-gray-800">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
           {DOC_LABELS[doc.docType] ?? doc.docType}
         </span>
         <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
@@ -59,12 +59,12 @@ function DocStatusCard({ doc }) {
       {score != null && (
         <div className="mb-2">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-gray-500">Confidence score</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Confidence score</span>
             <span className={`text-xs font-bold ${score >= 80 ? 'text-emerald-700' : score >= 60 ? 'text-amber-700' : 'text-red-700'}`}>
               {score}/100
             </span>
           </div>
-          <div className="h-1.5 bg-white/60 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-white/60 dark:bg-gray-700/60 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-amber-400' : 'bg-red-400'}`}
               style={{ width: `${score}%` }}
@@ -76,14 +76,14 @@ function DocStatusCard({ doc }) {
       {flags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1">
           {flags.map(f => (
-            <span key={f} className="text-[10px] px-2 py-0.5 bg-white/70 border border-red-100 text-red-600 rounded-md">
+            <span key={f} className="text-[10px] px-2 py-0.5 bg-white/70 border border-red-100 dark:border-red-500/30 text-red-600 dark:text-red-300 rounded-md">
               {FLAG_LABELS[f] ?? f}
             </span>
           ))}
         </div>
       )}
 
-      <p className="text-[10px] text-gray-400 mt-2">Uploaded {formatDate(doc.uploadedAt)}</p>
+      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">Uploaded {formatDate(doc.uploadedAt)}</p>
     </div>
   );
 }
@@ -125,11 +125,11 @@ export default function DriverPendingApprovalPage() {
         <div className="max-w-lg mx-auto py-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <ShieldX className="h-8 w-8 text-red-600" />
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-500/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <ShieldX className="h-8 w-8 text-red-600 dark:text-red-300" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">Application Rejected</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Application Rejected</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Your driver application was reviewed and could not be approved at this time.
               You can re-upload the documents listed below.
             </p>
@@ -137,9 +137,9 @@ export default function DriverPendingApprovalPage() {
 
           {/* Actual admin rejection reason */}
           {user?.reviewNotes && (
-            <div className="card p-4 bg-red-50 border border-red-200 mb-6">
-              <p className="text-sm font-semibold text-red-800 mb-1">Reason for rejection</p>
-              <p className="text-sm text-red-700">{user.reviewNotes}</p>
+            <div className="card p-4 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/30 mb-6">
+              <p className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">Reason for rejection</p>
+              <p className="text-sm text-red-700 dark:text-red-300">{user.reviewNotes}</p>
               {user?.reviewedAt && (
                 <p className="text-xs text-red-400 mt-2">
                   Reviewed on {new Date(user.reviewedAt).toLocaleString()}
@@ -150,15 +150,15 @@ export default function DriverPendingApprovalPage() {
 
           {/* Document statuses */}
           <div className="space-y-3 mb-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-2">Document Review</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Document Review</h2>
             {verifiableDocs.map(d => <DocStatusCard key={d.docId} doc={d} />)}
           </div>
 
           {/* Re-upload action */}
           {failedDocs.length > 0 && (
-            <div className="card p-4 bg-amber-50 border border-amber-200 mb-6">
-              <p className="text-sm font-semibold text-amber-800 mb-1">Action required</p>
-              <p className="text-xs text-amber-700 mb-3">
+            <div className="card p-4 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 mb-6">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">Action required</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mb-3">
                 Re-upload the documents that failed verification to re-submit your application.
               </p>
               <Link
@@ -173,8 +173,8 @@ export default function DriverPendingApprovalPage() {
 
           <button
             onClick={() => refreshUser?.()}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200
-              rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-gray-700
+              rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
           >
             <RefreshCw className="h-4 w-4" /> Refresh status
           </button>
@@ -190,10 +190,10 @@ export default function DriverPendingApprovalPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Clock className="h-8 w-8 text-indigo-600" />
+            <Clock className="h-8 w-8 text-indigo-600 dark:text-indigo-300" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Documents Under Review</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Documents Under Review</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Your documents have been submitted and are being reviewed by our team.
             We'll notify you by email and in-app once a decision is made.
           </p>
@@ -205,15 +205,15 @@ export default function DriverPendingApprovalPage() {
             <div className="flex-1 h-1.5 bg-indigo-100 rounded-full overflow-hidden">
               <div className="h-full bg-indigo-500 rounded-full" style={{ width: '75%' }} />
             </div>
-            <span className="text-xs font-semibold text-indigo-600 flex-shrink-0">Step 3 / 4</span>
+            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-300 flex-shrink-0">Step 3 / 4</span>
           </div>
           <div className="grid grid-cols-4 text-center gap-1">
             {['Submitted', 'In Review', 'Decision', 'Active'].map((s, i) => (
               <div key={s}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1 text-xs font-bold ${
-                  i < 2 ? 'bg-indigo-600 text-white' : i === 2 ? 'bg-indigo-100 text-indigo-600 border-2 border-indigo-300 border-dashed' : 'bg-gray-100 text-gray-400'
+                  i < 2 ? 'bg-indigo-600 text-white' : i === 2 ? 'bg-indigo-100 text-indigo-600 border-2 border-indigo-300 border-dashed' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
                 }`}>{i + 1}</div>
-                <p className={`text-[10px] font-medium ${i < 2 ? 'text-indigo-700' : 'text-gray-400'}`}>{s}</p>
+                <p className={`text-[10px] font-medium ${i < 2 ? 'text-indigo-700' : 'text-gray-400 dark:text-gray-500'}`}>{s}</p>
               </div>
             ))}
           </div>
@@ -221,7 +221,7 @@ export default function DriverPendingApprovalPage() {
 
         {/* Document status cards */}
         <div className="space-y-3 mb-6">
-          <h2 className="text-sm font-semibold text-gray-700">Verification details</h2>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Verification details</h2>
           {verifiableDocs.length === 0 ? (
             <div className="text-center py-6"><Spinner /></div>
           ) : (
@@ -230,8 +230,8 @@ export default function DriverPendingApprovalPage() {
         </div>
 
         {/* What happens next */}
-        <div className="card p-4 bg-gray-50 border border-gray-200">
-          <p className="text-xs font-semibold text-gray-600 mb-2">What happens next</p>
+        <div className="card p-4 bg-gray-50 dark:bg-surface-dark border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">What happens next</p>
           <ul className="space-y-1.5">
             {[
               'Our team reviews your submitted documents',
@@ -239,8 +239,8 @@ export default function DriverPendingApprovalPage() {
               'If approved: your account activates immediately',
               'If rejected: you can re-upload and resubmit',
             ].map((t, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-gray-500">
-                <span className="mt-0.5 w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[9px] font-bold flex-shrink-0">{i + 1}</span>
+              <li key={i} className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span className="mt-0.5 w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-[9px] font-bold flex-shrink-0">{i + 1}</span>
                 {t}
               </li>
             ))}
@@ -249,8 +249,8 @@ export default function DriverPendingApprovalPage() {
 
         <button
           onClick={() => refreshUser?.()}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200
-            rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-gray-700
+            rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
         >
           <RefreshCw className="h-4 w-4" /> Check for updates
         </button>

@@ -24,20 +24,20 @@ export const formatTrustScore = (score) =>
 
 const STATUS_STYLES = {
   // Ride statuses
-  SCHEDULED:           'bg-blue-100 text-blue-800',
-  IN_PROGRESS:         'bg-green-100 text-green-800',
-  COMPLETED:           'bg-gray-100 text-gray-700',
-  CANCELLED:           'bg-red-100 text-red-700',
+  SCHEDULED:           'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
+  IN_PROGRESS:         'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  COMPLETED:           'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300',
+  CANCELLED:           'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
   // Booking statuses
-  PENDING:             'bg-yellow-100 text-yellow-800',
-  APPROVED:            'bg-teal-100 text-teal-800',
-  CONFIRMED:           'bg-blue-100 text-blue-800',
+  PENDING:             'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300',
+  APPROVED:            'bg-teal-100 text-teal-800 dark:bg-teal-500/15 dark:text-teal-300',
+  CONFIRMED:           'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
   // User statuses
-  ACTIVE:              'bg-green-100 text-green-800',
-  SUSPENDED:           'bg-orange-100 text-orange-800',
-  BLOCKED:             'bg-red-100 text-red-800',
-  PENDING_VERIFICATION:'bg-purple-100 text-purple-800',
-  REJECTED:            'bg-red-100 text-red-700',
+  ACTIVE:              'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  SUSPENDED:           'bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300',
+  BLOCKED:             'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300',
+  PENDING_VERIFICATION:'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300',
+  REJECTED:            'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
   // Payment statuses
   FAILED:              'bg-red-100 text-red-700',
   REFUNDED:            'bg-indigo-100 text-indigo-700',
@@ -48,7 +48,7 @@ const STATUS_STYLES = {
 };
 
 export const getStatusStyle  = (status) =>
-  STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600';
+  STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400';
 
 export const getStatusLabel  = (status) =>
   status?.replace(/_/g, ' ') ?? '—';

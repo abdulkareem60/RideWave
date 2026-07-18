@@ -297,14 +297,16 @@ public class RideBookingMediator {
         }
 
         Ride ride = booking.getRide();
-        if (ride.getStatus() == RideStatus.COMPLETED) {
+
+        if (ride.getStatus() == RideStatus.COMPLETED
+                && booking.getStatus() != BookingStatus.COMPLETED) {
+
             throw new InvalidRideStateException(
-                    "Cannot cancel a booking for a completed ride.");
+                    "This ride has already been completed.");
         }
 
         // Mark cancelled
         bookingRepository.updateStatus(bookingId, BookingStatus.CANCELLED);
-        booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancellationReason(reason);
         booking.setCancelledAt(LocalDateTime.now());
         bookingRepository.save(booking);

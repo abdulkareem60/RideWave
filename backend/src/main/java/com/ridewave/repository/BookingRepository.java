@@ -39,10 +39,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     /** Mark all CONFIRMED/APPROVED bookings for a ride as COMPLETED in one shot. */
     @Modifying
     @Query("""
-           UPDATE Booking b SET b.status = 'COMPLETED'
-           WHERE b.ride.rideId = :rideId
-             AND b.status IN ('CONFIRMED','APPROVED')
-           """)
+       UPDATE Booking b
+       SET b.status = 'COMPLETED'
+       WHERE b.ride.rideId = :rideId
+         AND b.status IN ('PENDING','APPROVED','CONFIRMED')
+       """)
     int completeAllForRide(@Param("rideId") UUID rideId);
 
     @Query("""

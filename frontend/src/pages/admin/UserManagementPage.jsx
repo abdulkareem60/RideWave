@@ -52,13 +52,13 @@ export default function UserManagementPage() {
 
   return (
     <PageLayout>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">User Management</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">User Management</h1>
 
       {/* Filters */}
       <div className="card p-4 mb-6">
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
             <input className="input pl-9" placeholder="Search name or email…"
                    value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
           </div>
@@ -78,22 +78,22 @@ export default function UserManagementPage() {
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
                   <tr>
                     {['Name', 'Email', 'Role', 'Status', 'Trust', 'Joined', 'Actions'].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {users.map(u => (
-                    <tr key={u.userId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{u.fullName}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
+                    <tr key={u.userId} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{u.fullName}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{u.email}</td>
                       <td className="px-4 py-3"><span className="badge bg-brand-50 text-brand-700">{u.role}</span></td>
                       <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                       <td className="px-4 py-3"><TrustScoreBadge score={u.trustScore} /></td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{formatDateShort(u.createdAt)}</td>
+                      <td className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500">{formatDateShort(u.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 items-center flex-wrap">
                           {u.role === 'DRIVER' && u.status === 'PENDING_VERIFICATION' && (
@@ -121,7 +121,7 @@ export default function UserManagementPage() {
                     </tr>
                   ))}
                   {users.length === 0 && (
-                    <tr><td colSpan={7} className="text-center py-12 text-gray-400">No users found.</td></tr>
+                    <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">No users found.</td></tr>
                   )}
                 </tbody>
               </table>

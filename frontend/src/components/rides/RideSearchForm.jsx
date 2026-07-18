@@ -16,13 +16,13 @@ export default function RideSearchForm({ onSearch, loading }) {
   return (
     <form onSubmit={handleSubmit(onSearch)}
           className="card p-5 shadow-md">
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Search Available Rides</h2>
+      <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Search Available Rides</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
         {/* From */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">From</label>
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">From</label>
           <input className={`input ${errors.from ? 'input-error' : ''}`}
                  placeholder="Karachi, DHA Phase 5…"
                  {...register('from', { required: 'Origin is required' })} />
@@ -31,7 +31,7 @@ export default function RideSearchForm({ onSearch, loading }) {
 
         {/* To */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">To</label>
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">To</label>
           <input className={`input ${errors.to ? 'input-error' : ''}`}
                  placeholder="Lahore, Gulberg…"
                  {...register('to', { required: 'Destination is required' })} />
@@ -40,7 +40,7 @@ export default function RideSearchForm({ onSearch, loading }) {
 
         {/* Date */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Date</label>
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Date</label>
           <input type="date" className={`input ${errors.date ? 'input-error' : ''}`}
                  {...register('date', { required: 'Date is required' })} />
           {errors.date && <p className="text-xs text-red-500">{errors.date.message}</p>}
@@ -48,7 +48,7 @@ export default function RideSearchForm({ onSearch, loading }) {
 
         {/* Seats */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Seats</label>
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Seats</label>
           <input type="number" min={1} max={8} className="input"
                  {...register('seats', { min: 1, max: 8, valueAsNumber: true })} />
         </div>

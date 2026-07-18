@@ -13,59 +13,87 @@ import java.util.UUID;
 @Builder
 public class BookingResponse {
 
-    private UUID          bookingId;
-    private UUID          rideId;
+    private UUID bookingId;
+    private UUID rideId;
+    private UUID passengerId;
+    private String passengerName;
+    private String passengerPhoto;
+    private BigDecimal passengerTrustScore;
 
-    // ── Ride summary (avoids a second API call) ───────────────────────────
-    private String        originName;
-    private String        destName;
-    private LocalDateTime departureTime;
-    private BigDecimal    farePerSeat;
-
-    // ── Driver summary ────────────────────────────────────────────────────
-    private DriverSummaryResponse driver;
-
-    // ── Vehicle summary (added for passenger booking views) ───────────────
-    private VehicleResponse vehicle;
-
-    // ── Passenger summary ─────────────────────────────────────────────────
-    private UUID          passengerId;
-    private String        passengerName;
-    private String        passengerPhoto;
-    private java.math.BigDecimal passengerTrustScore;
-
-    // ── Booking details ───────────────────────────────────────────────────
-    private Integer       seatsBooked;
-    private BigDecimal    totalFare;
+    private Integer seatsBooked;
+    private BigDecimal totalFare;
     private BookingStatus status;
     private LocalDateTime bookingTime;
-    private String        cancellationReason;
+    private String cancellationReason;
+    private LocalDateTime cancelledAt;
 
-    // ── Payment (present after payment processing) ────────────────────────
-    private PaymentResponse payment;
+    // ── Driver's full route (origin → destination) ────────────────────────
+    private String rideOriginName;
+    private BigDecimal rideOriginLat;
+    private BigDecimal rideOriginLng;
+    private String rideDestName;
+    private BigDecimal rideDestLat;
+    private BigDecimal rideDestLng;
+    private LocalDateTime rideDepartureTime;
+    private BigDecimal rideFarePerSeat;
+    private String rideRoutePolyline;
+    private DriverSummaryResponse driver;
+    private VehicleResponse vehicle;
 
-    public static BookingResponse from(Booking booking) {
+    // ── Fare breakdown ────────────────────────────────────────────────────────
+    // Null for full-route bookings and legacy bookings created before
+    // partial-route fare was implemented.
+    private Integer     passengerDistanceM;    // pickup→drop metres
+    private Integer     rideDistanceM;         // full driver route metres
+    private BigDecimal  perSeatTripFare;       // totalTripFare ÷ seats
+    private BigDecimal  passengerFarePerSeat;  // pro-rated per-seat
+
+    // ── Passenger's actual segment (pickup → drop) ────────────────────────
+    // Null for legacy bookings created before route-matching was added;
+    // the UI falls back to showing the full driver route in that case.
+    private String pickupName;
+    private BigDecimal pickupLat;
+    private BigDecimal pickupLng;
+    private String dropName;
+    private BigDecimal dropLat;
+    private BigDecimal dropLng;
+
+    public static BookingResponse from(Booking b) {
+        var ride = b.getRide();
         return BookingResponse.builder()
-                .bookingId(booking.getBookingId())
-                .rideId(booking.getRide().getRideId())
-                .originName(booking.getRide().getOriginName())
-                .destName(booking.getRide().getDestName())
-                .departureTime(booking.getRide().getDepartureTime())
-                .farePerSeat(booking.getRide().getFarePerSeat())
-                .driver(DriverSummaryResponse.from(booking.getRide().getDriver()))
-                .vehicle(booking.getRide().getVehicle() != null
-                        ? VehicleResponse.from(booking.getRide().getVehicle()) : null)
-                .passengerId(booking.getPassenger().getUserId())
-                .passengerName(booking.getPassenger().getFullName())
-                .passengerPhoto(booking.getPassenger().getProfilePic())
-                .passengerTrustScore(booking.getPassenger().getTrustScore())
-                .seatsBooked(booking.getSeatsBooked())
-                .totalFare(booking.getTotalFare())
-                .status(booking.getStatus())
-                .bookingTime(booking.getBookingTime())
-                .cancellationReason(booking.getCancellationReason())
-                .payment(booking.getPayment() != null
-                        ? PaymentResponse.from(booking.getPayment()) : null)
+                .bookingId(b.getBookingId())
+                .rideId(ride.getRideId())
+                .passengerId(b.getPassenger().getUserId())
+                .passengerName(b.getPassenger().getFullName())
+                .passengerPhoto(b.getPassenger().getProfilePic())
+                .passengerTrustScore(b.getPassenger().getTrustScore())
+                .seatsBooked(b.getSeatsBooked())
+                .totalFare(b.getTotalFare())
+                .status(b.getStatus())
+                .bookingTime(b.getBookingTime())
+                .cancellationReason(b.getCancellationReason())
+                .cancelledAt(b.getCancelledAt())
+                .rideOriginName(ride.getOriginName())
+                .rideOriginLat(ride.getOriginLat())
+                .rideOriginLng(ride.getOriginLng())
+                .rideDestName(ride.getDestName())
+                .rideDestLat(ride.getDestLat())
+                .rideDestLng(ride.getDestLng())
+                .rideDepartureTime(ride.getDepartureTime())
+                .rideFarePerSeat(ride.getFarePerSeat())
+                .rideRoutePolyline(ride.getRoutePolyline())
+                .driver(DriverSummaryResponse.from(ride.getDriver()))
+                .vehicle(ride.getVehicle() != null ? VehicleResponse.from(ride.getVehicle()) : null)
+                .pickupName(b.getPickupName())
+                .pickupLat(b.getPickupLat())
+                .pickupLng(b.getPickupLng())
+                .dropName(b.getDropName())
+                .dropLat(b.getDropLat())
+                .dropLng(b.getDropLng())
+                .passengerDistanceM(b.getPassengerDistanceM())
+                .rideDistanceM(b.getRide().getRouteDistanceM())
+                .perSeatTripFare(b.getPerSeatTripFare())
+                .passengerFarePerSeat(b.getPassengerFarePerSeat())
                 .build();
     }
 }

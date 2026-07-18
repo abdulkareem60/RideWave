@@ -24,6 +24,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.ridewave.exception.ResourceNotFoundException;
+import com.ridewave.dto.request.ForgotPasswordRequest;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
@@ -176,15 +179,13 @@ class AuthServiceTest {
     // ── forgotPassword ────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("forgotPassword: silently succeeds when email does not exist (anti-enumeration)")
     void forgotPassword_unknownEmail_noException() {
-        var req = new com.ridewave.dto.request.ForgotPasswordRequest();
-        req.setEmail("nobody@ridewave.com");
+        ForgotPasswordRequest request = new ForgotPasswordRequest();
+        request.setEmail("unknown@email.com");
 
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> authService.forgotPassword(request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("No account found with this email address");
 
-        // Must not throw — prevents email enumeration
-        assertThatCode(() -> authService.forgotPassword(req)).doesNotThrowAnyException();
-        verify(otpService, never()).issuePasswordResetOtp(any());
     }
 }
