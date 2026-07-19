@@ -12,7 +12,7 @@ spring:
 
   # ── DataSource ────────────────────────────────────────────
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ridewave}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ridewave}?sslmode=require
     username: ${DB_USER:ridewave_user}
     password: ${DB_PASS:ridewave_pass}
     driver-class-name: org.postgresql.Driver
@@ -107,7 +107,7 @@ app:
     email: ${ADMIN_EMAIL:admin@ridewave.com}
     password: ${ADMIN_PASSWORD:Admin@RideWave123}
     full-name: ${ADMIN_FULL_NAME:RideWave Admin}
-    phone: ${ADMIN_PHONE:+920000000000}
+    phone: ${ADMIN_PHONE:+92000000000 0}
   otp:
     expiry-minutes: 10
     ride-otp-expiry-minutes: 30
