@@ -24,7 +24,6 @@ import java.util.UUID;
  * Swapping to production is a single Spring profile change.
  */
 @Component
-@Profile({"dev", "test"})
 @Slf4j
 public class NullPaymentProcessor implements PaymentProcessor {
 
