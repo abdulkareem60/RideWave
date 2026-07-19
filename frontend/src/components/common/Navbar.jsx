@@ -5,7 +5,7 @@ import {
   Car, Bell, Menu, X, LogOut, User, LayoutDashboard,
   Search, Settings, ChevronDown, Star, Shield,
   AlertCircle, TrendingUp, Users, Wallet,
-  Activity, PlusCircle, List, Calendar, MapPin,
+  PlusCircle, List, Calendar, MapPin,
   CheckCheck, Loader2, Sun, Moon,
 } from 'lucide-react';
 import { useAuth }              from '../../context/AuthContext.jsx';
@@ -268,16 +268,16 @@ function MobileBottomNav({ isAdmin, isDriver, isPassenger, dashLink, isOnboardin
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark-raised
       border-t border-gray-200 dark:border-gray-800
       px-2 py-1.5 flex items-center justify-around z-50 shadow-lg dark:shadow-black/30">
-      {/* Home for guests; Dashboard for auth users */}
-      {!(isAdmin || isDriver || isPassenger) ? (
-        <NavLink to="/" end className={linkCls}>
-          <Activity className="h-5 w-5" />
-          <span className="text-[10px] font-semibold">Home</span>
-        </NavLink>
-      ) : (
+      {/* Dashboard for auth users; Search for guests (logo → /) */}
+      {(isAdmin || isDriver || isPassenger) ? (
         <NavLink to={dashLink} className={linkCls}>
           <LayoutDashboard className="h-5 w-5" />
           <span className="text-[10px] font-semibold">Home</span>
+        </NavLink>
+      ) : (
+        <NavLink to="/rides/search" className={linkCls}>
+          <Search className="h-5 w-5" />
+          <span className="text-[10px] font-semibold">Rides</span>
         </NavLink>
       )}
 
@@ -441,12 +441,7 @@ export default function Navbar() {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-1">
-              {/* Home — guests only; authenticated users have role dashboards */}
-              {!user && (
-                <NavLink to="/" end className={linkCls}>
-                  <Activity className="h-4 w-4 inline mr-1.5" />Home
-                </NavLink>
-              )}
+              {/* Logo navigates to / — no separate Home link needed */}
 
               {/* Find Rides — PASSENGER only */}
               {isPassenger && (
@@ -605,13 +600,7 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* Home — guests only */}
-              {!user && (
-                <NavLink to="/" end onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${isActive ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60'}`}>
-                  <Activity className="h-5 w-5" />Home
-                </NavLink>
-              )}
+              {/* Home link removed — logo links to / */}
 
               {/* Find Rides — PASSENGER only */}
               {isPassenger && (
