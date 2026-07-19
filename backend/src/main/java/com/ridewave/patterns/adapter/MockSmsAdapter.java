@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * without needing a Twilio account or spending SMS credits.
  */
 @Component
-@Profile({"dev", "test"})
+
 @Slf4j
 public class MockSmsAdapter implements SmsProvider {
 
