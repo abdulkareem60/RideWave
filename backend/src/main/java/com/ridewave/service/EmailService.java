@@ -1,11 +1,8 @@
 package com.ridewave.service;
 
 import com.ridewave.config.AppProperties;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +20,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
     private final AppProperties  appProperties;
+    private final BrevoEmailService brevoEmailService;
 
     // ── Auth / Account OTPs ───────────────────────────────────────────────
 
@@ -137,25 +134,12 @@ public class EmailService {
      * Sends via Gmail SMTP. `toEmail` is always the dynamic recipient —
      * the from-address is the single configured Gmail sender.
      */
-    private void send(String toEmail, String subject, String htmlBody) {
-        log.info("EMAIL ATTEMPTING: to={} subject={}", toEmail, subject);
-        log.info("EMAIL FROM: {} ({})",
-                appProperties.getMail().getFromAddress(),
-                appProperties.getMail().getFromName());
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(
-                    appProperties.getMail().getFromAddress(),
-                    appProperties.getMail().getFromName());
-            helper.setTo(toEmail);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true);
-            mailSender.send(message);
-            log.info("EMAIL SENT SUCCESSFULLY: to={}", toEmail);
-        } catch (Exception e) {
-            log.error("EMAIL SEND FAILED: to={} subject={} error={}",
-                    toEmail, subject, e.getMessage(), e);
-        }
+
+    private void send(String to, String subject, String html) {
+        brevoEmailService.send(
+                to,
+                subject,
+                html
+        );
     }
 }
