@@ -1,143 +1,205 @@
 # ============================================================
-# RideWave — Main Application Configuration
-#
-# All sensitive values are read from environment variables.
-# Defaults (after the colon) are safe for local development only.
-# On Render / Vercel, set the corresponding env vars in the
-# dashboard — never commit real credentials here.
+# RideWave – Main Application Configuration
 # ============================================================
 
 spring:
+  application:
+    name: ridewave-backend
 
-  # ── Database ─────────────────────────────────────────────
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # ==========================================================
+  # DATABASE
+  # ==========================================================
   datasource:
-    url:      ${DB_URL:jdbc:postgresql://localhost:5432/ridewave}
-    username: ${DB_USER:ridewave_user}
-    password: ${DB_PASS:secret}
-    hikari:
-      pool-name:            RideWaveHikariPool
-      maximum-pool-size:    10
-      minimum-idle:         2
-      connection-timeout:   30000
-      idle-timeout:         600000
-      max-lifetime:         1800000
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ridewave}?sslmode=require
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:password}
+    driver-class-name: org.postgresql.Driver
 
-  # ── JPA / Hibernate ──────────────────────────────────────
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      pool-name: RideWaveHikariPool
+
+  # ==========================================================
+  # JPA / HIBERNATE
+  # ==========================================================
   jpa:
     hibernate:
-      ddl-auto: update            # use 'validate' once schema is stable
+      ddl-auto: validate
+
     show-sql: false
+    open-in-view: false
+
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: false
+        format_sql: true
+        default_schema: public
 
-  # ── Spring Mail (JavaMailSender) ──────────────────────────
-  #
-  # Set these env vars on Render:
-  #   MAIL_HOST          → smtp-relay.brevo.com   (or smtp.sendgrid.net)
-  #   MAIL_PORT          → 587
-  #   MAIL_USERNAME      → your SMTP login
-  #   MAIL_PASSWORD      → your SMTP key / password
-  #
-  # The from-address and display name are controlled by the
-  # app.mail.* properties below, NOT by spring.mail.username.
-  mail:
-    host:     ${MAIL_HOST:smtp-relay.brevo.com}
-    port:     ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth:            true
-          starttls:
-            enable:        true
-            required:      true
-          connectiontimeout: 10000
-          timeout:           10000
-          writetimeout:      10000
-        debug: false         # set to true temporarily to see SMTP handshake logs
+        jdbc:
+          batch_size: 20
 
-  # ── Flyway ────────────────────────────────────────────────
+        order_inserts: true
+        order_updates: true
+
+  # ==========================================================
+  # FLYWAY
+  # ==========================================================
   flyway:
-    enabled:          true
-    locations:        classpath:db/migration
+    enabled: false
     baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: public
 
-  # ── Servlet / File upload ─────────────────────────────────
-  servlet:
-    multipart:
-      max-file-size:    20MB
-      max-request-size: 25MB
+  # ==========================================================
+  # MAIL (BREVO SMTP)
+  # ==========================================================
+# ==========================================================
+# BREVO API
+# ==========================================================
 
-  # ── Async (email / notifications run on a thread pool) ────
-  task:
-    execution:
-      pool:
-        core-size:      4
-        max-size:       16
-        queue-capacity: 100
+brevo:
+  api-key: ${BREVO_API_KEY}
 
-# ── JWT ──────────────────────────────────────────────────────
-jwt:
-  secret:             ${JWT_SECRET:changeme_at_least_64_chars_long_for_HS512_algorithm_please}
-  expiration:         86400000       # 24 h in ms
-  refresh-expiration: 604800000      # 7 d in ms
-
-# ── Application-level properties (AppProperties.java) ────────
-#
-# CORS
-#   CORS_ORIGINS env var accepts a comma-separated list, e.g.:
-#     https://ride-wave-murex.vercel.app,https://custom.domain.com
-#
-# Mail
-#   MAIL_FROM_ADDRESS → the "From" address shown to recipients
-#   MAIL_FROM_NAME    → the display name shown to recipients
-#
-# OTP
-#   Expiry in minutes (default 10).
-#
 app:
-  cors:
-    allowed-origins: >-
-      ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,https://ride-wave-murex.vercel.app}
-
   mail:
-    from-address: ${MAIL_FROM_ADDRESS:noreply@ridewave.pk}
-    from-name:    ${MAIL_FROM_NAME:RideWave}
+    from-address: ${MAIL_FROM_ADDRESS}
+    from-name: ${MAIL_FROM_NAME:RideWave}
 
-  otp:
-    expiry-minutes: ${OTP_EXPIRY_MINUTES:10}
-    max-attempts:   ${OTP_MAX_ATTEMPTS:3}
+  # ==========================================================
+  # JACKSON
+  # ==========================================================
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+    deserialization:
+      fail-on-unknown-properties: false
+
+    default-property-inclusion: non_null
+
+# ============================================================
+# SERVER
+# ============================================================
+
+server:
+  port: ${PORT:8080}
+
+  servlet:
+    context-path: /
+
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# ============================================================
+# JWT
+# ============================================================
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+
+# ============================================================
+# TWILIO
+# ============================================================
+
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  from-number: ${TWILIO_FROM_NUMBER:}
+  enabled: ${TWILIO_ENABLED:false}
+
+# ============================================================
+# GOOGLE MAPS
+# ============================================================
+
+google:
+  maps:
+    api-key: ${GOOGLE_MAPS_API_KEY:}
+
+# ============================================================
+# PAYMENT
+# ============================================================
+
+payment:
+  provider: ${PAYMENT_PROVIDER:null}
+  currency: PKR
+
+# ============================================================
+# APP
+# ============================================================
+
+app:
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
 
   admin:
-    email:     ${ADMIN_EMAIL:admin@ridewave.com}
-    password:  ${ADMIN_PASSWORD:Admin@RideWave123}
+    email: ${ADMIN_EMAIL:admin@ridewave.com}
+    password: ${ADMIN_PASSWORD:Admin@RideWave123}
     full-name: ${ADMIN_FULL_NAME:RideWave Admin}
-    phone:     ${ADMIN_PHONE:+920000000000}
+    phone: ${ADMIN_PHONE:+92000000000}
 
-# ── Gemini AI (driver document OCR) ──────────────────────────
+  otp:
+    expiry-minutes: 10
+    ride-otp-expiry-minutes: 30
+
+  trust-score:
+    default-score: 3.0
+    min-to-book: 1.5
+    min-to-drive: 2.0
+    auto-suspend-below: 1.0
+
+  verification:
+    tessdata-path: ${TESSDATA_PREFIX:}
+    blur-threshold: ${BLUR_THRESHOLD:100.0}
+    ai-score-threshold: ${AI_SCORE_THRESHOLD:0.60}
+
+  mail:
+    from-address: ${MAIL_FROM_ADDRESS}
+    from-name: RideWave
+
+# ============================================================
+# GEMINI
+# ============================================================
+
 gemini:
-  api-key: ${GEMINI_API_KEY:}
-  model:   gemini-1.5-flash
+  enabled: false
 
-# ── Actuator ─────────────────────────────────────────────────
+# ============================================================
+# ACTUATOR
+# ============================================================
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
+
   endpoint:
     health:
       show-details: when-authorized
 
-# ── Logging ──────────────────────────────────────────────────
-logging:
-  level:
-    root:                        INFO
-    com.ridewave:                DEBUG
-    org.springframework.mail:    DEBUG   # Shows SMTP connection details
-    org.springframework.security: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+# ============================================================
+# SWAGGER
+# ============================================================
+
+springdoc:
+  api-docs:
+    path: /api-docs
+
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+  info:
+    title: RideWave API
+    version: 1.0.0
+    description: Ride-sharing platform REST API
