@@ -82,8 +82,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // OPTIONS preflight must be permitted unconditionally.
-                        // Without this, browsers never get the CORS headers because
-                        // Spring Security rejects the preflight before the CORS filter runs.
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Public auth endpoints
@@ -98,6 +96,11 @@ public class SecurityConfig {
 
                         // Actuator health — public (metrics locked down)
                         .requestMatchers("/actuator/health").permitAll()
+
+                        // ═══════════════════════════════════════════════════════
+                        // FIX: Permit root path for Render health checks & probes
+                        // ═══════════════════════════════════════════════════════
+                        .requestMatchers("/").permitAll()
 
                         // Public ride browse + search — guests can preview the platform
                         .requestMatchers(HttpMethod.GET, "/api/v1/rides/browse").permitAll()

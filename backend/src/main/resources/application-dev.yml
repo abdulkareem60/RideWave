@@ -25,11 +25,33 @@ spring:
   flyway:
     enabled: false
 
+# ═══════════════════════════════════════════════════════════
+# JWT — REQUIRED by JwtTokenProvider.java
+# ═══════════════════════════════════════════════════════════
+jwt:
+  secret: ${JWT_SECRET:dev-local-secret-key-must-be-at-least-64-characters-long-for-hs512-algorithm-xyz123}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+
+# ═══════════════════════════════════════════════════════════
+# Brevo / Sendinblue — REQUIRED by BrevoEmailService.java
+# ═══════════════════════════════════════════════════════════
+brevo:
+  api-key: ${BREVO_API_KEY:dev-brevo-api-key-12345}
+
+# ═══════════════════════════════════════════════════════════
+# AppProperties bindings — REQUIRED by SecurityConfig & BrevoEmailService
+# ═══════════════════════════════════════════════════════════
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+  mail:
+    from-name: ${MAIL_FROM_NAME:RideWave Dev}
+    from-address: ${MAIL_FROM_ADDRESS:noreply@ridewave.local}
+  verification:
+    ai-score-threshold: ${AI_SCORE_THRESHOLD:0.80}
+
 logging:
   level:
     com.ridewave: DEBUG
     org.hibernate.SQL: WARN
-
-app:
-  verification:
-    ai-score-threshold: ${AI_SCORE_THRESHOLD:0.80}
